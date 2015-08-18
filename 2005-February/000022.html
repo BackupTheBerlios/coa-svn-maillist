@@ -1,0 +1,93 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Coa-svn] r27 - trunk/src/fr/umlv/coa/javacard
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/coa-svn/2005-February/index.html" >
+   <LINK REL="made" HREF="mailto:coa-svn%40lists.berlios.de?Subject=Re%3A%20%5BCoa-svn%5D%20r27%20-%20trunk/src/fr/umlv/coa/javacard&In-Reply-To=%3C200502242207.j1OM7l7g024962%40sheep.berlios.de%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="000021.html">
+   <LINK REL="Next"  HREF="000023.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Coa-svn] r27 - trunk/src/fr/umlv/coa/javacard</H1>
+    <B>Leny at BerliOS</B> 
+    <A HREF="mailto:coa-svn%40lists.berlios.de?Subject=Re%3A%20%5BCoa-svn%5D%20r27%20-%20trunk/src/fr/umlv/coa/javacard&In-Reply-To=%3C200502242207.j1OM7l7g024962%40sheep.berlios.de%3E"
+       TITLE="[Coa-svn] r27 - trunk/src/fr/umlv/coa/javacard">leny at sheep.berlios.de
+       </A><BR>
+    <I>Thu Feb 24 23:07:47 CET 2005</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="000021.html">[Coa-svn] r26 - trunk/src/fr/umlv/coa/javacard
+</A></li>
+        <LI>Next message: <A HREF="000023.html">[Coa-svn] r28 - in trunk/src/fr/umlv/coa: corba javacard
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#22">[ date ]</a>
+              <a href="thread.html#22">[ thread ]</a>
+              <a href="subject.html#22">[ subject ]</a>
+              <a href="author.html#22">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Author: leny
+Date: 2005-02-24 23:07:45 +0100 (Thu, 24 Feb 2005)
+New Revision: 27
+
+Modified:
+   trunk/src/fr/umlv/coa/javacard/COACardInterface.java
+Log:
+
+
+Modified: trunk/src/fr/umlv/coa/javacard/COACardInterface.java
+===================================================================
+--- trunk/src/fr/umlv/coa/javacard/COACardInterface.java	2005-02-24 21:58:34 UTC (rev 26)
++++ trunk/src/fr/umlv/coa/javacard/COACardInterface.java	2005-02-24 22:07:45 UTC (rev 27)
+@@ -47,7 +47,7 @@
+ public final class COACardInterface
+ {
+ 	/** The opencard home directory */ 
+-	private static final String	HOME_DIR 	= &quot;d:&quot; + File.separator + &quot;gemplus&quot; + File.separator + &quot;gemxpresso.rad3&quot;;
++	private static final String	HOME_DIR 	= &quot;c:&quot; + File.separator + &quot;gemplus&quot; + File.separator + &quot;gemxpresso.rad3&quot;;
+ 	/** The card reader */
+ 	private static final String	CARD_TARGET	= &quot;gempc410_com1&quot;;
+ 	/** The card profile name */
+@@ -243,7 +243,7 @@
+ 			
+ 			if(buffer.length&gt;=2)
+ 			{
+-				if((buffer[buffer.length-1]!=(byte)0x00)||(buffer[buffer.length-2]!=(byte)0x90)
++				if((buffer[buffer.length-1]!=(byte)0x00)||(buffer[buffer.length-2]!=(byte)0x90))
+ 				{
+ 					return null;
+ 				}
+
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="000021.html">[Coa-svn] r26 - trunk/src/fr/umlv/coa/javacard
+</A></li>
+	<LI>Next message: <A HREF="000023.html">[Coa-svn] r28 - in trunk/src/fr/umlv/coa: corba javacard
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#22">[ date ]</a>
+              <a href="thread.html#22">[ thread ]</a>
+              <a href="subject.html#22">[ subject ]</a>
+              <a href="author.html#22">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/coa-svn">More information about the Coa-svn
+mailing list</a><br>
+</body></html>

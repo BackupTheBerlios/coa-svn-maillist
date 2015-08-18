@@ -1,0 +1,352 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Coa-svn] r9 - trunk/src/fr/umlv/coa/javacard
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/coa-svn/2005-February/index.html" >
+   <LINK REL="made" HREF="mailto:coa-svn%40lists.berlios.de?Subject=Re%3A%20%5BCoa-svn%5D%20r9%20-%20trunk/src/fr/umlv/coa/javacard&In-Reply-To=%3C200502202358.j1KNw4aX011575%40sheep.berlios.de%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="000004.html">
+   <LINK REL="Next"  HREF="000006.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Coa-svn] r9 - trunk/src/fr/umlv/coa/javacard</H1>
+    <B>Leny at BerliOS</B> 
+    <A HREF="mailto:coa-svn%40lists.berlios.de?Subject=Re%3A%20%5BCoa-svn%5D%20r9%20-%20trunk/src/fr/umlv/coa/javacard&In-Reply-To=%3C200502202358.j1KNw4aX011575%40sheep.berlios.de%3E"
+       TITLE="[Coa-svn] r9 - trunk/src/fr/umlv/coa/javacard">leny at sheep.berlios.de
+       </A><BR>
+    <I>Mon Feb 21 00:58:04 CET 2005</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="000004.html">[Coa-svn] r8 - trunk/src/fr/umlv/coa/javacard
+</A></li>
+        <LI>Next message: <A HREF="000006.html">[Coa-svn] r10 - trunk/src/fr/umlv/coa/javacard
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#5">[ date ]</a>
+              <a href="thread.html#5">[ thread ]</a>
+              <a href="subject.html#5">[ subject ]</a>
+              <a href="author.html#5">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Author: leny
+Date: 2005-02-21 00:57:56 +0100 (Mon, 21 Feb 2005)
+New Revision: 9
+
+Added:
+   trunk/src/fr/umlv/coa/javacard/Main.java
+Modified:
+   trunk/src/fr/umlv/coa/javacard/COACardInterface.java
+Log:
+
+
+Modified: trunk/src/fr/umlv/coa/javacard/COACardInterface.java
+===================================================================
+--- trunk/src/fr/umlv/coa/javacard/COACardInterface.java	2005-02-20 23:34:16 UTC (rev 8)
++++ trunk/src/fr/umlv/coa/javacard/COACardInterface.java	2005-02-20 23:57:56 UTC (rev 9)
+@@ -10,6 +10,7 @@
+ import opencard.core.event.CTListener;
+ import opencard.core.event.EventGenerator;
+ import opencard.core.service.CardRequest;
++import opencard.core.service.CardServiceException;
+ import opencard.core.service.SmartCard;
+ import opencard.core.terminal.CardTerminal;
+ import opencard.core.terminal.CardTerminalException;
+@@ -23,13 +24,11 @@
+ import com.gemplus.opencard.service.op.CardServiceOPException;
+ import com.gemplus.opencard.service.op.Result;
+ import com.gemplus.opencard.service.op.vop.VOPAuthenticationInput;
+-import com.gemplus.opencard.service.op.vop.vop200.CardServiceVOP200;
+ import com.gemplus.opencard.service.op.vop.vop211.CardServiceVOP211;
++import com.gemplus.tools.gemxpresso.GemXpressoException;
+ import com.gemplus.tools.gemxpresso.GemXpressoService;
+ import com.gemplus.tools.gemxpresso.util.GxpSystem;
+ 
+-import fr.umlv.boss.client.util.BOSSErrorListener;
+-import fr.umlv.boss.client.util.ErrorManager;
+ 
+ 
+ class COACardInterface
+@@ -72,6 +71,11 @@
+ 	private final List				listListener		= new ArrayList ();
+ 
+ 	private static COACardInterface	INSTANCE			= null;
++	
++	private final static byte		CARD_GET_NAME		= (byte)0xFF;
++	private final static byte		CARD_GET_INS		= (byte)0xFE;
++	private final static byte		CARD_GET_INS_NAME	= (byte)0xFD;
++	
+ 
+ 	public COACardInterface ()
+ 	{
+@@ -114,15 +118,36 @@
+ 	{
+ 		keyFile = appKeyFile = keyFileDir + File.separator + cardKeyFile;
+ 
+-		serv = (CardServiceOPCore) card.getCardService (CardServiceVOP211.class , true);
+-
++		try
++		{
++			serv = (CardServiceOPCore) card.getCardService (CardServiceVOP211.class , true);
++		}
++		catch (Exception e2)
++		{
++			e2.printStackTrace();
++		}
++		
+ 		serv.setFullCrypto (true);
+ 
+-		libService = new GemXpressoService ();
+-		libService.setCardService (serv);
++		try
++		{
++			libService = new GemXpressoService ();
++			libService.setCardService (serv);
++		}
++		catch (GemXpressoException e1)
++		{
++			e1.printStackTrace();
++		}
+ 
+-		serv.warmReset ();
+-
++		try
++		{
++			serv.warmReset ();
++		}
++		catch (Exception e)
++		{
++			e.printStackTrace();
++		}
++		
+ 		VOPAuthenticationInput authenticationInput;
+ 		authenticationInput = new VOPAuthenticationInput ();
+ 
+@@ -146,7 +171,7 @@
+ 		}
+ 		catch (Exception ex)
+ 		{
+-			throw new Exception (&quot;authentication error : &quot; + ex.getMessage ());
++			ex.printStackTrace();
+ 		}
+ 	}
+ 
+@@ -181,34 +206,35 @@
+ 	public void initListApplet ()
+ 	{
+ 		Enumeration en = null;
++		if(serv == null)
++		{
++			System.out.println (&quot;Error service unavailable !!!&#167;!&#167;!&#167;&quot;);
++			return;
++		}
+ 
+ 		try
+ 		{
+ 			en = serv.scanCard ();
+ 		}
+-		catch (CardServiceOPException e)
++		catch (Exception e)
+ 		{
+-			// TODO Auto-generated catch block
+ 			e.printStackTrace ();
+ 		}
+-		catch (CardTerminalException e)
+-		{
+-			// TODO Auto-generated catch block
+-			e.printStackTrace ();
+-		}
+ 
++		if(en != null)
+ 		while (en.hasMoreElements ())
+ 		{
+ 			CardObjectStatus cOS = (CardObjectStatus) en.nextElement ();
+ 			if (cOS.getCardObjectType () == CardObjectStatus.OBJECT_STATUS_ON_APPLICATION)
+ 			{
+-				appletMap.put (cOS.getAIDAsString () , new AppletCOA (cOS.getAID ()));
+-
+-				AppletCOA ap = new AppletCOA (cOS.getAID ());
+-				makeAppletINSMap (ap);
+-				appletMap.put (cOS.getAID ().toString () , ap);
++				//AppletCOA ap = new AppletCOA (cOS.getAID (), getAppletName(cOS.getAID()));
++				//makeAppletINSMap (ap);
++				//appletMap.put (cOS.getAID ().toString () , ap);
++				System.out.println (getAppletName(cOS.getAID()));
+ 			}
+ 		}
++		else
++			System.out.println (&quot;No Applet on card&quot;);
+ 	}
+ 
+ 	private void makeAppletINSMap (AppletCOA applet)
+@@ -265,13 +291,52 @@
+ 
+ 		return null;
+ 	}
++	
++	private String getAppletName (AppletID aid)
++	{
++		try
++		{
++			byte [] aidBuffer = new byte [5];
++			byte [] tmpBuff = new byte [256];
++			int i = 2, j = 0;
++			String appletName = null;
+ 
++			serv.select (aid);
++
++			aidBuffer [0] = aid.getBytes () [0];
++			aidBuffer [1] = CARD_GET_NAME;
++			aidBuffer [2] = (byte) 0x00;
++			aidBuffer [3] = (byte) 0x00;
++			aidBuffer [4] = (byte) 0x00;
++
++			ResponseAPDU response = serv.sendAPDU (aidBuffer);
++
++			byte [] desc = response.getBuffer();
++			
++			if ((desc.length &lt; 2) || (desc [0] != 0x12) || (desc [1] != 0x03))
++				return null;
++
++			for (; desc [i] != (byte)0x90 &amp;&amp; desc [i+1] != (byte)0x00 ; i++, j++)
++					tmpBuff [j] = desc [i];
++
++			return bytesToString (tmpBuff , (int) j);
++		}
++		catch (Exception e)
++		{
++			e.printStackTrace ();
++		}
++
++		return null;
++	}
++
+ 	public void cardInserted (SmartCard card, CardTerminal terminal, int slotId)
+ 	{
+ 		this.card = card;
+ 		this.terminal = terminal;
+ 		this.slotId = slotId;
+ 
++		System.out.println (&quot;Card Inserted !&quot;);
++		
+ 		initListApplet ();
+ 
+ 		fireCardInserted ();
+@@ -279,22 +344,38 @@
+ 
+ 	public void cardRemoved ()
+ 	{
++		System.out.println (&quot;Card Removed !&quot;);
++		
+ 		fireCardRemoved ();
+ 	}
+ 
+ 	private void fireCardInserted ()
+ 	{
+-		for (Iterator i = listListener.iterator (); i.hasNext ();)
+-			((CTListener) i.next ()).cardInserted (null);
++		try
++		{
++			for (Iterator i = listListener.iterator (); i.hasNext ();)
++				((CTListener) i.next ()).cardInserted (null);
++		}
++		catch (CardTerminalException e)
++		{
++			e.printStackTrace();
++		}
+ 	}
+ 
+ 	private void fireCardRemoved ()
+ 	{
+-		for (Iterator i = listListener.iterator (); i.hasNext ();)
+-			((CTListener) i.next ()).cardRemoved (null);
++		try
++		{
++			for (Iterator i = listListener.iterator (); i.hasNext ();)
++				((CTListener) i.next ()).cardRemoved (null);
++		}
++		catch (CardTerminalException e)
++		{
++			e.printStackTrace();
++		}
+ 	}
+ 
+-	public void init (String [] argv)
++	public void init ()
+ 	{
+ 		GxpSystem.getInstance ().setRadHome (homeDir);
+ 
+@@ -308,7 +389,9 @@
+ 
+ 		EventGenerator.getGenerator ().addCTListener (new COAJavaCardListener ());
+ 
+-		while (true)
++		boolean stop = true;
++		
++		while (stop)
+ 		{
+ 
+ 		}
+
+Added: trunk/src/fr/umlv/coa/javacard/Main.java
+===================================================================
+--- trunk/src/fr/umlv/coa/javacard/Main.java	2005-02-20 23:34:16 UTC (rev 8)
++++ trunk/src/fr/umlv/coa/javacard/Main.java	2005-02-20 23:57:56 UTC (rev 9)
+@@ -0,0 +1,26 @@
++/* 
++ * File    : Main.java
++ * Created : 21 f&#233;vr. 2005
++ * 
++ * =======================================
++ * COA PROJECT (&quot;<A HREF="http://coa.berlios.de">http://coa.berlios.de</A>&quot;)
++ * =======================================
++ *
++ */
++
++package fr.umlv.coa.javacard;
++
++/**
++ * @author Administrateur
++ *
++ */
++public class Main
++{
++
++	public static void main (String [] args)
++	{
++		COACardInterface i = COACardInterface.getInstance();
++		
++		i.init();		
++	}
++}
+
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="000004.html">[Coa-svn] r8 - trunk/src/fr/umlv/coa/javacard
+</A></li>
+	<LI>Next message: <A HREF="000006.html">[Coa-svn] r10 - trunk/src/fr/umlv/coa/javacard
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#5">[ date ]</a>
+              <a href="thread.html#5">[ thread ]</a>
+              <a href="subject.html#5">[ subject ]</a>
+              <a href="author.html#5">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/coa-svn">More information about the Coa-svn
+mailing list</a><br>
+</body></html>

@@ -1,0 +1,317 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Coa-svn] r28 - in trunk/src/fr/umlv/coa: corba javacard
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/coa-svn/2005-February/index.html" >
+   <LINK REL="made" HREF="mailto:coa-svn%40lists.berlios.de?Subject=Re%3A%20%5BCoa-svn%5D%20r28%20-%20in%20trunk/src/fr/umlv/coa%3A%20corba%20javacard&In-Reply-To=%3C200502251751.j1PHpaGm006911%40sheep.berlios.de%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="000022.html">
+   <LINK REL="Next"  HREF="000024.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Coa-svn] r28 - in trunk/src/fr/umlv/coa: corba javacard</H1>
+    <B>Leny at BerliOS</B> 
+    <A HREF="mailto:coa-svn%40lists.berlios.de?Subject=Re%3A%20%5BCoa-svn%5D%20r28%20-%20in%20trunk/src/fr/umlv/coa%3A%20corba%20javacard&In-Reply-To=%3C200502251751.j1PHpaGm006911%40sheep.berlios.de%3E"
+       TITLE="[Coa-svn] r28 - in trunk/src/fr/umlv/coa: corba javacard">leny at sheep.berlios.de
+       </A><BR>
+    <I>Fri Feb 25 18:51:36 CET 2005</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="000022.html">[Coa-svn] r27 - trunk/src/fr/umlv/coa/javacard
+</A></li>
+        <LI>Next message: <A HREF="000024.html">[Coa-svn] r29 - trunk/src/fr/umlv/coa/javacard
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#23">[ date ]</a>
+              <a href="thread.html#23">[ thread ]</a>
+              <a href="subject.html#23">[ subject ]</a>
+              <a href="author.html#23">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Author: leny
+Date: 2005-02-25 18:51:23 +0100 (Fri, 25 Feb 2005)
+New Revision: 28
+
+Modified:
+   trunk/src/fr/umlv/coa/corba/COAClient.java
+   trunk/src/fr/umlv/coa/corba/CardServant.java
+   trunk/src/fr/umlv/coa/javacard/MonApplet.java
+Log:
+
+
+Modified: trunk/src/fr/umlv/coa/corba/COAClient.java
+===================================================================
+--- trunk/src/fr/umlv/coa/corba/COAClient.java	2005-02-24 22:07:45 UTC (rev 27)
++++ trunk/src/fr/umlv/coa/corba/COAClient.java	2005-02-25 17:51:23 UTC (rev 28)
+@@ -13,6 +13,8 @@
+ import java.io.BufferedReader;
+ import java.io.FileReader;
+ 
++import opencard.core.util.HexString;
++
+ import org.omg.CORBA.Any;
+ import org.omg.CORBA.ORB;
+ import org.omg.CORBA.Object;
+@@ -20,6 +22,9 @@
+ import org.omg.CORBA.TCKind;
+ import org.omg.CORBA.TypeCode;
+ 
++import fr.umlv.coa.javacard.MonApplet;
++import fr.umlv.coa.monapplet.MonAppletHelper;
++
+ /**
+  * @author Ludo
+  *
+@@ -39,25 +44,60 @@
+ 		
+ 		String szRef = null;
+ 		
+-		BufferedReader reader = new BufferedReader (new FileReader (&quot;Test00Ref&quot;));
++		BufferedReader reader = new BufferedReader (new FileReader (&quot;MonApplet0Ref&quot;));
+ 		szRef = reader.readLine ();
+ 		reader.close ();
+ 		
+ 		Object  object = orb.string_to_object (szRef);
+-		Request req	   = object._request (&quot;hello&quot;);		
+ 		
+-		TypeCode retObject = orb.get_primitive_tc (TCKind.tk_string);
+-		req.set_return_type (retObject);
+-		//req.set_return_type (orb.create_interface_tc (&quot;IDL:COA/Test0-0:1.0&quot;, &quot;Test&quot;));
+-		req.invoke ();
++		fr.umlv.coa.monapplet.MonApplet applet = MonAppletHelper.unchecked_narrow (object);
+ 		
+-		Any result   = req.return_value ();
+-		String szRes = result.extract_string (); 
++		byte [] res = applet.getName ();
+ 		
+-		System.out.println (&quot;RESULTAT : &quot; + szRes);
++		int iIndex = 0;
+ 		
+-		//System.out.println (result.extract_octet ());
++		for (; res [iIndex] != 0; iIndex ++);
+ 		
++		System.out.println (&quot;NAME &quot; + new String (res, 0, iIndex));
++		
++		//System.out.println (HexString.hexify(res));
++
++		System.out.println (&quot;--------------------------------------&quot;);
++		
++		res = applet.getNumber ();
++		
++		int iRes = res [0] &lt;&lt; 8 | res [1];
++		
++		System.out.println (&quot;RESULTAT : &quot; + iRes);
++		
++		
++		//System.out.println (HexString.hexify(res));
++
++		
++		//System.out.println (new String (applet.getName ()));
++		
++		
++		//System.out.println (HexString.hexify(applet.getArg()));
++		
++		//applet.setArg((byte)0x28);
++		
++		//System.out.println (HexString.hexify(applet.getArg()));
++		
++//		
++//		Request req	   = object._request (&quot;getName&quot;);		
++//		
++//		TypeCode retObject = orb.get_primitive_tc (TCKind.tk_string);
++//		req.set_return_type (retObject);
++//		//req.set_return_type (orb.create_interface_tc (&quot;IDL:COA/Test0-0:1.0&quot;, &quot;Test&quot;));
++//		req.invoke();
++//		
++//		Any result   = req.return_value ();
++//		String Res = result.extract_string(); 
++//		
++//		System.out.println (&quot;RESULTAT : &quot; + Res);
++//		
++//		//System.out.println (result.extract_octet ());
++		
+ 		/*while (true)
+ 		{
+ 			System.out.println (&quot;OCTET : &quot; + (char) result.extract_octet ());
+
+Modified: trunk/src/fr/umlv/coa/corba/CardServant.java
+===================================================================
+--- trunk/src/fr/umlv/coa/corba/CardServant.java	2005-02-24 22:07:45 UTC (rev 27)
++++ trunk/src/fr/umlv/coa/corba/CardServant.java	2005-02-25 17:51:23 UTC (rev 28)
+@@ -12,6 +12,8 @@
+ 
+ import java.io.IOException;
+ 
++import opencard.core.util.HexString;
++
+ import org.omg.CORBA.SystemException;
+ import org.omg.CORBA.portable.InputStream;
+ import org.omg.CORBA.portable.InvokeHandler;
+@@ -72,21 +74,35 @@
+ 
+ 		try
+ 		{
++			System.out.println (&quot;TAILLE INPUT : &quot; + input.available ());
++			
+ 			// Construction de l'argument
+ 			byte [] arg = new byte [input.available ()];
+-			input.read (arg, 0, arg.length);
++			//arg [0] = input.read_octet ();
++			//input.read_octet_array (arg, 0, arg.length);
+ 			
++			//System.out.println (&quot;AFFICHAGE DE L ARG&quot;);
++			//System.out.println (HexString.hexify(arg));
++			
++			byte [] ret = new byte [256];
+ 			byte [] res = COACardInterface.getInstance ().invoke (applet.getName (), method, arg);
+ 
+ 			if (res == null)
+ 				return null;
+ 			
++			if (res == null)
++				return out;
++			
++			System.arraycopy (res, 0, ret, 0, res.length);
++			
+ 			//byte [] 	 res = &quot;toto&quot;.getBytes ();
+ 			
+-			/*for (int i = 0; i &lt; res.length; ++i)
+-				out.write_octet (res [i]);*/
++			out.write_octet_array (ret, 0, ret.length);
+ 			
+-			out.write_string (new String (res));
++			//for (int i = 0; i &lt; res.length; ++i)
++				//out.write_octet (res [i]);
++			
++			//out.write_string (new String (res));
+ 		}
+ 		catch (IOException e)
+ 		{
+
+Modified: trunk/src/fr/umlv/coa/javacard/MonApplet.java
+===================================================================
+--- trunk/src/fr/umlv/coa/javacard/MonApplet.java	2005-02-24 22:07:45 UTC (rev 27)
++++ trunk/src/fr/umlv/coa/javacard/MonApplet.java	2005-02-25 17:51:23 UTC (rev 28)
+@@ -27,14 +27,19 @@
+ 	private final static byte GET_NAME = (byte) 0xFF;
+ 	private final static byte INS_GET_NAME = (byte) 0x13;
+ 	private final static byte INS_GET_NUMBER = (byte) 0x14;
++	private final static byte INS_GET_ARG = (byte) 0x15;
++	private final static byte INS_SET_ARG = (byte) 0x16;
+ 	private final static byte INS_DESC = (byte) 0xFD;
+ 	private final static byte INS_LIST_INS = (byte) 0xFE;
+ 	private final static byte [] DESC_OK = {(byte)0x12, (byte)0x03};
+ 	private final static byte [] DESC_NOK = {(byte)0x12, (byte)0x04};
+-	private final static byte [] LIST_INS = {(byte)INS_GET_NAME, (byte)INS_GET_NUMBER};	
++	private final static byte [] LIST_INS = {(byte)INS_GET_NAME, (byte)INS_GET_NUMBER, (byte)INS_GET_ARG, (byte)INS_SET_ARG};	
+ 	private final static byte [] INS_GET_NAME_DESC = {(byte)'g', (byte)'e',(byte)'t',(byte)'N',(byte)'a',(byte)'m',(byte)'e'};
++	private final static byte [] INS_GET_ARG_DESC = {(byte)'g', (byte)'e',(byte)'t',(byte)'A',(byte)'r',(byte)'g'};
++	private final static byte [] INS_SET_ARG_DESC = {(byte)'s', (byte)'e',(byte)'t',(byte)'A',(byte)'r',(byte)'g'};
+ 	private final static byte [] INS_GET_NUMBER_DESC = {(byte)'g', (byte)'e',(byte)'t',(byte)'N',(byte)'u',(byte)'m',(byte)'b',(byte)'e',(byte)'r'};
+ 	private final static byte [] NAME = {(byte)'M', (byte)'o', (byte)'n', (byte)'A', (byte)'p', (byte)'p', (byte)'l', (byte)'e', (byte)'t' };
++	private byte arg = (byte)0;
+ 	
+ 	//----------------------------------------------------------//
+ 	//------------------- CONSTRUCTORS -------------------------//
+@@ -94,6 +99,13 @@
+ 				case INS_GET_NUMBER :
+ 					getNumber (arg0);
+ 					break;
++				case INS_GET_ARG :
++					getArg (arg0);
++					break;
++				case INS_SET_ARG :
++					setArg (arg0);
++					break;
++					
+ 				default :
+ 					ISOException.throwIt (ISO7816.SW_INS_NOT_SUPPORTED);
+ 			}
+@@ -154,10 +166,42 @@
+ 		
+ 		apdu.sendBytes ((short) 5 , (short) 2);
+ 	}
++
++	/**
++	 * @param apdu
++	 */
++	private void getArg (APDU apdu)
++	{
++		byte [] apduBuffer = apdu.getBuffer ();
++		
++		apduBuffer [5] = arg;
++		
++		apdu.setOutgoing ();
++		
++		apdu.setOutgoingLength ((short) 1);
++		
++		apdu.sendBytes ((short) 5 , (short) 1);
++	}
+ 	
+ 	/**
+ 	 * @param apdu
+ 	 */
++	private void setArg (APDU apdu)
++	{
++		byte [] apduBuffer = apdu.getBuffer ();
++		
++		arg = apduBuffer[5];
++		
++		apdu.setOutgoing ();
++		
++		apdu.setOutgoingLength ((short) 0);
++		
++		apdu.sendBytes ((short) 5 , (short) 0);
++	}
++	
++	/**
++	 * @param apdu
++	 */
+ 	private void sendAppletName (APDU apdu)
+ 	{
+ 		byte [] buffer = apdu.getBuffer ();
+@@ -187,6 +231,12 @@
+ 			case INS_GET_NUMBER :
+ 				sendInsDesc (apdu , INS_GET_NUMBER_DESC , true);
+ 				break;
++			case INS_GET_ARG :
++				sendInsDesc (apdu , INS_GET_ARG_DESC, true);
++				break;
++			case INS_SET_ARG :
++				sendInsDesc (apdu , INS_SET_ARG_DESC, true);
++				break;
+ 			default :
+ 				sendInsDesc (apdu , null , false);
+ 		}
+
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="000022.html">[Coa-svn] r27 - trunk/src/fr/umlv/coa/javacard
+</A></li>
+	<LI>Next message: <A HREF="000024.html">[Coa-svn] r29 - trunk/src/fr/umlv/coa/javacard
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#23">[ date ]</a>
+              <a href="thread.html#23">[ thread ]</a>
+              <a href="subject.html#23">[ subject ]</a>
+              <a href="author.html#23">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/coa-svn">More information about the Coa-svn
+mailing list</a><br>
+</body></html>

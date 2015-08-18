@@ -1,0 +1,837 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Coa-svn] r7 - trunk/src/fr/umlv/coa/javacard
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/coa-svn/2005-February/index.html" >
+   <LINK REL="made" HREF="mailto:coa-svn%40lists.berlios.de?Subject=Re%3A%20%5BCoa-svn%5D%20r7%20-%20trunk/src/fr/umlv/coa/javacard&In-Reply-To=%3C200502202244.j1KMiOHv029401%40sheep.berlios.de%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="000002.html">
+   <LINK REL="Next"  HREF="000004.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Coa-svn] r7 - trunk/src/fr/umlv/coa/javacard</H1>
+    <B>Leny at BerliOS</B> 
+    <A HREF="mailto:coa-svn%40lists.berlios.de?Subject=Re%3A%20%5BCoa-svn%5D%20r7%20-%20trunk/src/fr/umlv/coa/javacard&In-Reply-To=%3C200502202244.j1KMiOHv029401%40sheep.berlios.de%3E"
+       TITLE="[Coa-svn] r7 - trunk/src/fr/umlv/coa/javacard">leny at sheep.berlios.de
+       </A><BR>
+    <I>Sun Feb 20 23:44:24 CET 2005</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="000002.html">[Coa-svn] r6 - trunk/lib
+</A></li>
+        <LI>Next message: <A HREF="000004.html">[Coa-svn] r8 - trunk/src/fr/umlv/coa/javacard
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#3">[ date ]</a>
+              <a href="thread.html#3">[ thread ]</a>
+              <a href="subject.html#3">[ subject ]</a>
+              <a href="author.html#3">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Author: leny
+Date: 2005-02-20 23:44:23 +0100 (Sun, 20 Feb 2005)
+New Revision: 7
+
+Added:
+   trunk/src/fr/umlv/coa/javacard/COAJavaCardListener.java
+Modified:
+   trunk/src/fr/umlv/coa/javacard/AppletCOA.java
+   trunk/src/fr/umlv/coa/javacard/COACardInterface.java
+Log:
+
+
+Modified: trunk/src/fr/umlv/coa/javacard/AppletCOA.java
+===================================================================
+--- trunk/src/fr/umlv/coa/javacard/AppletCOA.java	2005-02-20 18:50:01 UTC (rev 6)
++++ trunk/src/fr/umlv/coa/javacard/AppletCOA.java	2005-02-20 22:44:23 UTC (rev 7)
+@@ -7,25 +7,24 @@
+ 
+ 
+ /**
+- * 
+- * @author Leny
+- *
+  */
+ public final class AppletCOA
+ {
+ 	/** The applet ID */
+-	private AppletID aid;
+-	private Map		 mapINS	= new HashMap ();
+-	
++	private AppletID	aid;
++	private Map			mapINS	= new HashMap ();
++	private String		name;
++
+ 	/**
+ 	 * @param aid
+ 	 */
+-	public AppletCOA (AppletID aid)
++	public AppletCOA (AppletID aid, String name)
+ 	{
+ 		super ();
+ 		this.aid = aid;
++		this.name = name;
+ 	}
+-	
++
+ 	/**
+ 	 * @return Returns the aid.
+ 	 */
+@@ -33,7 +32,7 @@
+ 	{
+ 		return aid;
+ 	}
+-	
++
+ 	/**
+ 	 * @return Returns the listINS.
+ 	 */
+@@ -41,8 +40,7 @@
+ 	{
+ 		return mapINS;
+ 	}
+-	
+-	
++
+ 	/**
+ 	 * @param name
+ 	 * @return
+@@ -51,8 +49,7 @@
+ 	{
+ 		return ((Byte) mapINS.get (name)).byteValue ();
+ 	}
+-	
+-	
++
+ 	/**
+ 	 * @param number
+ 	 * @param name
+@@ -61,4 +58,9 @@
+ 	{
+ 		mapINS.put (name , new Byte (number));
+ 	}
+-}
++		
++	public String getName ()
++	{
++		return name;
++	}
++}
+\ No newline at end of file
+
+Modified: trunk/src/fr/umlv/coa/javacard/COACardInterface.java
+===================================================================
+--- trunk/src/fr/umlv/coa/javacard/COACardInterface.java	2005-02-20 18:50:01 UTC (rev 6)
++++ trunk/src/fr/umlv/coa/javacard/COACardInterface.java	2005-02-20 22:44:23 UTC (rev 7)
+@@ -1,9 +1,14 @@
+ package fr.umlv.coa.javacard;
+ 
+ import java.io.File;
++import java.util.ArrayList;
+ import java.util.Enumeration;
++import java.util.Iterator;
++import java.util.List;
+ import java.util.TreeMap;
+ 
++import opencard.core.event.CTListener;
++import opencard.core.event.EventGenerator;
+ import opencard.core.service.CardRequest;
+ import opencard.core.service.SmartCard;
+ import opencard.core.terminal.CardTerminal;
+@@ -23,261 +28,160 @@
+ import com.gemplus.tools.gemxpresso.GemXpressoService;
+ import com.gemplus.tools.gemxpresso.util.GxpSystem;
+ 
++import fr.umlv.boss.client.util.BOSSErrorListener;
++import fr.umlv.boss.client.util.ErrorManager;
+ 
++
+ class COACardInterface
+ {
+-	/**
+-	 * global declarations
+-	 */
+-	// OP/VOP OCF CardService and its high level API library
+-	private CardServiceOPCore	serv;
+-	private boolean				isVOP211Compliant	= true;
+-	private GemXpressoService	libService;
+-	// OCF CardTerminal for Card or GSE communication
+-	private CardTerminal		terminal;
+-	// OCF objects for APDU transport
+-	private CommandAPDU			cmd;
+-	private ResponseAPDU		resp;
+-	
+-	private TreeMap				appletMap			= new TreeMap ();
+-	
+-	// Windows platform (c:\gemplus\gemxpresso.rad3)
+-	private String				homeDir				= &quot;c:&quot; + File.separator + &quot;gemplus&quot; + File.separator + &quot;gemxpresso.rad3&quot;;
+-	
+-	//targets path (&lt;gemxpressorad&gt;\resources\targets)
+-	private String				keyFileDir;
+-	
+-	//card profile dir (&lt;gemxpressorad&gt;\resouces\cardprofile)
+-	private String				profileDir;
+-	
+-	/**
+-	 *  Card target names
+-	 */
+-	// the name defined in the CardTerminal section of the &quot;opencard.properties&quot; file
+-	private String				cardTarget			= &quot;gempc410_com1&quot;;
+-	
+-	/**
+-	 *  Key file
+-	 */
+-	// the key file (GXP211_PK is default)
+-	private String				cardKeyFile			= &quot;GXP211_PK.properties&quot;;
+-	
+-	// the target flag, if true the GSE target is used, card otherwise
+-	private static boolean		simulation			= true;
+-	
+-	// the load flag, if true package is loaded in card or GSE
+-	private boolean				loadPackage			= true;
+-	
+-	// the type of GSE or Card (GXP211_PK is default)
+-	private String				FrameworkType		= &quot;GXP211_PK&quot;;
+-	
+-	/**
+-	 * System authentication informations
+-	 */
+-	// the Security Domain AID used for security
+-	private byte []				securityDomainAID	= null;
+-	// the system key File for management
+-	private String				keyFile;
+-	// the system key set version
+-	private int					keySetVersion		= 13;
+-	// the system key set index (0 is default)
+-	private int					keyIndex			= 0;
+-	// the security level definition flags
+-	private boolean				isEnciphered		= false;
+-	private boolean				isMacing			= false;
+-	
+-	/**
+-	 * Application authentication informations
+-	 */
+-	// the application key Files
+-	private String				appKeyFile;
+-	// the application key set version
+-	private int					appKeySetVersion	= 13;
+-	// the application key set index
+-	private int					appKeyIndex			= 0;
+-	
++
++	private CardServiceOPCore		serv;
++	private GemXpressoService		libService;
++
++	private CardTerminal			terminal			= null;
++	private SmartCard				card				= null;
++	private int						slotId				= 0;
++
++	private TreeMap					appletMap			= new TreeMap ();
++
++	private String					homeDir				= &quot;c:&quot; + File.separator + &quot;gemplus&quot; + File.separator + &quot;gemxpresso.rad3&quot;;
++
++	private String					keyFileDir;
++
++	private String					profileDir;
++
++	private String					cardTarget			= &quot;gempc410_com1&quot;;
++
++	private String					cardKeyFile			= &quot;GXP211_PK.properties&quot;;
++
++	private boolean					loadPackage			= true;
++
++	private String					frameworkType		= &quot;GXP211_PK&quot;;
++
++	private byte []					securityDomainAID	= null;
++	private String					keyFile;
++	private int						keySetVersion		= 13;
++	private int						keyIndex			= 0;
++	private boolean					isEnciphered		= false;
++	private boolean					isMacing			= false;
++
++	private String					appKeyFile;
++	private int						appKeySetVersion	= 13;
++	private int						appKeyIndex			= 0;
++
++	private final List				listListener		= new ArrayList ();
++
++	private static COACardInterface	INSTANCE			= null;
++
+ 	public COACardInterface ()
+ 	{
+ 	}
+-	
+-	/**
+-	 * OCF layer initialisation
+-	 */
++
++	public static COACardInterface getInstance ()
++	{
++		if (INSTANCE == null)
++			INSTANCE = new COACardInterface ();
++
++		return INSTANCE;
++	}
++
++	public boolean addErrorListener (CTListener l)
++	{
++		return listListener.add (l);
++	}
++
++	public boolean removeErrorListener (CTListener l)
++	{
++		return listListener.remove (l);
++	}
++
+ 	public void initOCF ()
+ 	{
+-		// start of initialisation
+ 		try
+ 		{
+-			// start the OCF layer
+ 			SmartCard.start ();
+-			
+-			// fixe the target
+-			String target = cardTarget;
+-			
+-			// print found terminals
++
+ 			printAvailableTerminals ();
+-			
+-			// select the target specific CardTerminal
+-			terminal = CardTerminalRegistry.getRegistry ().cardTerminalForName (target);
+-			
+-			// check if required terminal name was found
+-			if (terminal == null)
+-			{
+-				throw new Exception (&quot;terminal not found : &quot; + target);
+-			}
+-			
+-			// retreive the CardTerminal type
+-			String type = terminal.getType ();
+-			if ((type.compareTo (&quot;SOCKETJC21SIMULATOR&quot;) == 0) &amp;&amp; !simulation)
+-			{
+-				throw new Exception (&quot;terminal &quot; + target + &quot; is a simulator instance&quot;);
+-			}
+-			
+-			if (!(type.compareTo (&quot;SOCKETJC21SIMULATOR&quot;) == 0) &amp;&amp; simulation)
+-			{
+-				throw new Exception (&quot;terminal &quot; + target + &quot; is not a simulator instance&quot;);
+-			}
+-			
+-			// create a new card request object
+-			CardRequest cr = new CardRequest (CardRequest.ANYCARD, terminal, null);
+-			
+-			// build the complete key file
+-			keyFile = appKeyFile = keyFileDir + File.separator + cardKeyFile;
+-			
+-			// wait for card insertion
+-			SmartCard sc = SmartCard.waitForCard (cr);
+-			// get the OP/VOP specific CardService
+-			if (isVOP211Compliant)
+-				serv = (CardServiceOPCore) sc.getCardService (CardServiceVOP211.class , true);
+-			else
+-				serv = (CardServiceOPCore) sc.getCardService (CardServiceVOP200.class , true);
+-			
+-			//sets FullCrypto if FullCrypto card or Limited Crypto if IS card
+-			serv.setFullCrypto (FrameworkType.indexOf (&quot;IS&quot;) == -1);
+-			
+-			// create the  high level API library object
+-			libService = new GemXpressoService ();
+-			// set the OP/VOP CardService to the service library for communication
+-			libService.setCardService (serv);
+-			
+-			// reset the Card or GSE to look for the default ATR
+-			serv.warmReset ();
+-			
+-			// the service authentication object use for authentication configuration
+-			VOPAuthenticationInput authenticationInput;
+-			// service authentication object creation
+-			authenticationInput = new VOPAuthenticationInput ();
+-			// look if key set version is defined
+-			if (keySetVersion &gt; 0)
+-			{
+-				// key set version configuration
+-				authenticationInput.setKeySetVersion (keySetVersion);
+-				// do not use the key set version defined in the target file
+-				authenticationInput.setDefaultKeySetVersion (false);
+-			}
+-			else
+-			{
+-				// no key set version defined
+-				// use the key set version defined in the target file
+-				authenticationInput.setDefaultKeySetVersion (true);
+-			}
+-			// key set version index configuration
+-			authenticationInput.setKeyIndex (keyIndex);
+-			// security configuration
+-			authenticationInput.setEnciphered (isEnciphered);
+-			authenticationInput.setMacing (isMacing);
+-			// define the target specific key file to use
+-			authenticationInput.setKeyfile (keyFile);
+-			// define if the security domain has to be select (yes)
+-			authenticationInput.setSecurityDomainSelection (true);
+-			// define the Security Domain AID
+-			// null force the use of the AID present in the target key file
+-			authenticationInput.setSecurityDomainAID (null);
+-			
+-			try
+-			{
+-				// process mutual authentication
+-				// initialize/update and external/authenticate are done
+-				Result result = serv.openSecureChanel (authenticationInput);
+-				// check the result object for authentication status
+-				if ((result != null) &amp;&amp; !result.isOK ())
+-				{
+-					throw new Exception (&quot;authentication error : &quot; + result.getResultMessage ());
+-				}
+-			}
+-			catch (Exception ex)
+-			{
+-				// authentication fails
+-				throw new Exception (&quot;authentication error : &quot; + ex.getMessage ());
+-			}
+-			// authentication succeed
+-			System.out.println (&quot;Authentication OK&quot;);
+-			System.out.println (&quot;&quot;);
+-			
+ 		}
+ 		catch (Exception ex)
+ 		{
+-			// exception generated during OCF initialization
+ 			System.out.println (&quot;Exception caught in initOCF : &quot; + ex.getMessage ());
+-			// terminate client application
+ 			System.exit (-1);
+ 		}
+ 	}
+-	
+-	/**
+-	 * PurseClient default constructor
+-	 */
+-	public void setHomeDir (String radHome)
++
++	private void authentication ()
+ 	{
+-		homeDir = radHome;
++		keyFile = appKeyFile = keyFileDir + File.separator + cardKeyFile;
++
++		serv = (CardServiceOPCore) card.getCardService (CardServiceVOP211.class , true);
++
++		serv.setFullCrypto (true);
++
++		libService = new GemXpressoService ();
++		libService.setCardService (serv);
++
++		serv.warmReset ();
++
++		VOPAuthenticationInput authenticationInput;
++		authenticationInput = new VOPAuthenticationInput ();
++
++		authenticationInput.setKeySetVersion (keySetVersion);
++		authenticationInput.setDefaultKeySetVersion (false);
++
++		authenticationInput.setKeyIndex (keyIndex);
++		authenticationInput.setEnciphered (isEnciphered);
++		authenticationInput.setMacing (isMacing);
++		authenticationInput.setKeyfile (keyFile);
++		authenticationInput.setSecurityDomainSelection (true);
++		authenticationInput.setSecurityDomainAID (null);
++
++		try
++		{
++			Result result = serv.openSecureChanel (authenticationInput);
++			if ((result != null) &amp;&amp; !result.isOK ())
++			{
++				throw new Exception (&quot;authentication error : &quot; + result.getResultMessage ());
++			}
++		}
++		catch (Exception ex)
++		{
++			throw new Exception (&quot;authentication error : &quot; + ex.getMessage ());
++		}
+ 	}
+-	
+-	/**
+-	 * Utility that print the available OCF CardTerminal for the client
+-	 */
++
+ 	private void printAvailableTerminals ()
+ 	{
+-		// get an enumeration from the registry
+-		java.util.Enumeration terminals = CardTerminalRegistry.getRegistry ().getCardTerminals ();
+-		// the CardTerminal we are retreiving information
++		Enumeration terminals = CardTerminalRegistry.getRegistry ().getCardTerminals ();
+ 		CardTerminal inFocusTerminal;
+-		
+-		// analyse loop
++
+ 		while (terminals.hasMoreElements ())
+ 		{
+ 			inFocusTerminal = (CardTerminal) terminals.nextElement ();
+ 			System.out.println (&quot;Found OCF Card Terminal:&quot;);
+-			// print the user defined name
+ 			System.out.println (&quot;\t- Name = &quot; + inFocusTerminal.getName ());
+-			// print the legal type
+ 			System.out.println (&quot;\t- Type = &quot; + inFocusTerminal.getType ());
+-			// print the corresponding adress
+ 			System.out.println (&quot;\t- Adress = &quot; + inFocusTerminal.getAddress () + &quot;\n&quot;);
+ 		}
+ 	}
+-	
+-	/**
+-	 * Free OCF layer used by the client
+-	 */
++
+ 	public void stopOCF ()
+ 	{
+ 		try
+ 		{
+-			// free the OCF layer before terminating
+ 			SmartCard.shutdown ();
+ 		}
+ 		catch (Exception ex)
+ 		{
+ 			System.out.println (&quot;Exception caught in stopOCF : &quot; + ex.getMessage ());
+-			// terminate client application with an exception
+ 			java.lang.System.exit (-1);
+ 		}
+ 	}
+-	
++
+ 	public void initListApplet ()
+ 	{
+ 		Enumeration en = null;
+-		
++
+ 		try
+ 		{
+ 			en = serv.scanCard ();
+@@ -292,153 +196,128 @@
+ 			// TODO Auto-generated catch block
+ 			e.printStackTrace ();
+ 		}
+-		
++
+ 		while (en.hasMoreElements ())
+ 		{
+ 			CardObjectStatus cOS = (CardObjectStatus) en.nextElement ();
+ 			if (cOS.getCardObjectType () == CardObjectStatus.OBJECT_STATUS_ON_APPLICATION)
+ 			{
+ 				appletMap.put (cOS.getAIDAsString () , new AppletCOA (cOS.getAID ()));
+-				
++
+ 				AppletCOA ap = new AppletCOA (cOS.getAID ());
+ 				makeAppletINSMap (ap);
+ 				appletMap.put (cOS.getAID ().toString () , ap);
+ 			}
+ 		}
+ 	}
+-	
++
+ 	private void makeAppletINSMap (AppletCOA applet)
+ 	{
+ 		byte [] desc = getAppletDescription (applet.getAid ());
+ 		int i = 2;
+-		
++
+ 		if ((desc.length &lt; 2) || (desc [0] != 0x12) || (desc [1] != 0x03))
+ 			return;
+-		
++
+ 		while (desc [i] != (byte) 0x90 &amp;&amp; desc [i + 1] != (byte) 0x0)
+ 		{
+ 			byte [] tmpBuff = new byte [256];
+ 			String insName = null;
+ 			byte ins = 0;
+ 			int j = 0;
+-			
++
+ 			for (j = 0; desc [i] != 00; i++, j++)
+ 				tmpBuff [j] = desc [i];
+-			
++
+ 			ins = desc [++i];
+-			
++
+ 			i++;
+-			
++
+ 			insName = bytesToString (tmpBuff , (int) j);
+-			
++
+ 			applet.addINS (ins , insName);
+ 		}
+ 	}
+-	
++
+ 	private byte [] getAppletDescription (AppletID aid)
+ 	{
+ 		try
+ 		{
+ 			byte [] aidBuffer = new byte [5];
+-			
++
+ 			serv.select (aid);
+-			
++
+ 			aidBuffer [0] = aid.getBytes () [0];
+ 			aidBuffer [1] = (byte) 0xFF;
+ 			aidBuffer [2] = (byte) 0x00;
+ 			aidBuffer [3] = (byte) 0x00;
+ 			aidBuffer [4] = (byte) 0x00;
+-			
++
+ 			ResponseAPDU response = serv.sendAPDU (aidBuffer);
+-			
++
+ 			return response.getBuffer ();
+-			
++
+ 		}
+-		catch (CardServiceOPException e)
++		catch (Exception e)
+ 		{
+-			// TODO Auto-generated catch block
+ 			e.printStackTrace ();
+ 		}
+-		catch (CardTerminalException e)
+-		{
+-			// TODO Auto-generated catch block
+-			e.printStackTrace ();
+-		}
+-		
++
+ 		return null;
+ 	}
+-	
+-	/**
+-	 * Application main entry point.
+-	 * @param argv not used by default application.
+-	 */
+-	public static void main (String [] argv)
++
++	public void cardInserted (SmartCard card, CardTerminal terminal, int slotId)
+ 	{
+-		String radHome = null;
+-		String cardT = null;
+-		
+-		// parse arguments
+-		for (int i = 0; i &lt; argv.length; i++)
++		this.card = card;
++		this.terminal = terminal;
++		this.slotId = slotId;
++
++		initListApplet ();
++
++		fireCardInserted ();
++	}
++
++	public void cardRemoved ()
++	{
++		fireCardRemoved ();
++	}
++
++	private void fireCardInserted ()
++	{
++		for (Iterator i = listListener.iterator (); i.hasNext ();)
++			((CTListener) i.next ()).cardInserted (null);
++	}
++
++	private void fireCardRemoved ()
++	{
++		for (Iterator i = listListener.iterator (); i.hasNext ();)
++			((CTListener) i.next ()).cardRemoved (null);
++	}
++
++	public void init (String [] argv)
++	{
++		GxpSystem.getInstance ().setRadHome (homeDir);
++
++		keyFileDir = System.getProperty (&quot;gemplus.gemxpresso.rad.home.resources.targets&quot;);
++		profileDir = System.getProperty (&quot;gemplus.gemxpresso.rad.home.resources.cardprofile&quot;);
++		System.setProperty (&quot;user.dir&quot; , System.getProperty (&quot;gemplus.gemxpresso.rad.home.conf&quot;));
++
++		System.out.println (&quot;COACardInterface started&quot;);
++
++		initOCF ();
++
++		EventGenerator.getGenerator ().addCTListener (new COAJavaCardListener ());
++
++		while (true)
+ 		{
+-			// card request
+-			if (argv [i].toLowerCase ().equals (&quot;-card&quot;))
+-				simulation = false;
+-			// GSE request
+-			if (argv [i].toLowerCase ().equals (&quot;-gse&quot;))
+-				simulation = true;
+-			// rad home directory
+-			if (argv [i].toLowerCase ().equals (&quot;-radhome&quot;))
+-				radHome = argv [++i];
+-			if (argv [i].toLowerCase ().equals (&quot;-cardtype&quot;))
+-			{
+-				cardT = argv [++i];
+-			}
++
+ 		}
+-		
+-		if (cardT == null)
+-		{
+-			System.exit (-1);
+-		}
+-		// create client instance
+-		COACardInterface client = new COACardInterface ();
+-		client.cardKeyFile = cardT + &quot;.properties&quot;;
+-		client.FrameworkType = cardT;
+-		if (cardT.equals (&quot;GXP211v1&quot;) || cardT.equals (&quot;GXP211v1_IS&quot;))
+-			client.isVOP211Compliant = false;
+-		else
+-			client.isVOP211Compliant = true;
+-		
+-		// change rad home directory used for properties files.
+-		if (radHome != null)
+-			client.setHomeDir (radHome);
+-		
+-		//allows to get all path properties for GemXpressoRad
+-		GxpSystem.getInstance ().setRadHome (client.homeDir);
+-		
+-		//sets the targets dir
+-		client.keyFileDir = System.getProperty (&quot;gemplus.gemxpresso.rad.home.resources.targets&quot;);
+-		//sets the card profile dir
+-		client.profileDir = System.getProperty (&quot;gemplus.gemxpresso.rad.home.resources.cardprofile&quot;);
+-		//!!!!REQUIRED !!!!
+-		//sets user.dir to &lt;gemxpressorad&gt;\conf directory for OCF initialization (initOCF)
+-		//OCF automatically search the opencard.properties file in the user.dir (current) directory.
+-		System.setProperty (&quot;user.dir&quot; , System.getProperty (&quot;gemplus.gemxpresso.rad.home.conf&quot;));
+-		
+-		System.out.println (&quot;----- start of COACardInterface client application -----&quot;);
+-		
+-		// initialise OCF layer
+-		client.initOCF ();
+-		
+-		client.initListApplet ();
+-		
+-		// free OCF layer
+-		client.stopOCF ();
+-		
+-		System.out.println (&quot;----- end of COACardInterface client application -----&quot;);
+-		// terminate client application normally
+-		java.lang.System.exit (0);
++
++		stopOCF ();
++
++		System.out.println (&quot;COACardInterface stoped&quot;);
+ 	}
+-	
++
+ 	private String bytesToString (byte [] b, int len)
+ 	{
+ 		byte [] c = new byte [len];
+@@ -451,4 +330,4 @@
+ 		}
+ 		return new String (c);
+ 	}
+-}
++}
+\ No newline at end of file
+
+Added: trunk/src/fr/umlv/coa/javacard/COAJavaCardListener.java
+===================================================================
+--- trunk/src/fr/umlv/coa/javacard/COAJavaCardListener.java	2005-02-20 18:50:01 UTC (rev 6)
++++ trunk/src/fr/umlv/coa/javacard/COAJavaCardListener.java	2005-02-20 22:44:23 UTC (rev 7)
+@@ -0,0 +1,62 @@
++/*
++ * File : COAJavaCardListener.java Created : 20 f&#233;vr. 2005
++ * ======================================= BOSS PROJECT
++ * (&quot;<A HREF="http://boss.berlios.de">http://boss.berlios.de</A>&quot;) =======================================
++ */
++
++package fr.umlv.coa.javacard;
++
++import opencard.core.event.CTListener;
++import opencard.core.event.CardTerminalEvent;
++import opencard.core.service.SmartCard;
++import opencard.core.terminal.CardTerminal;
++import opencard.core.terminal.CardTerminalException;
++
++
++/**
++ */
++public class COAJavaCardListener implements CTListener
++{
++	private SmartCard		smartcard	= null;
++	private CardTerminal	terminal	= null;
++	private int				slotID		= 0;
++
++	/**
++	 * @see opencard.core.event.CTListener#cardInserted(opencard.core.event.CardTerminalEvent)
++	 */
++	public void cardInserted (CardTerminalEvent event) throws CardTerminalException
++	{
++		if (smartcard == null)
++		{
++			try
++			{
++				smartcard = SmartCard.getSmartCard (event);
++				terminal = event.getCardTerminal ();
++				slotID = event.getSlotID ();
++
++				COACardInterface.getInstance ().cardInserted (smartcard , terminal , slotID);
++
++			}
++			catch (Exception e)
++			{
++				e.printStackTrace ();
++			}
++		}
++	}
++
++	/**
++	 * @see opencard.core.event.CTListener#cardRemoved(opencard.core.event.CardTerminalEvent)
++	 */
++	public void cardRemoved (CardTerminalEvent event) throws CardTerminalException
++	{
++		if ((event.getSlotID () == slotID) &amp;&amp; (event.getCardTerminal () == terminal))
++		{
++			smartcard = null;
++			terminal = null;
++			slotID = 0;
++
++			COACardInterface.getInstance ().cardRemoved ();
++		}
++	}
++
++}
+\ No newline at end of file
+
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="000002.html">[Coa-svn] r6 - trunk/lib
+</A></li>
+	<LI>Next message: <A HREF="000004.html">[Coa-svn] r8 - trunk/src/fr/umlv/coa/javacard
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#3">[ date ]</a>
+              <a href="thread.html#3">[ thread ]</a>
+              <a href="subject.html#3">[ subject ]</a>
+              <a href="author.html#3">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/coa-svn">More information about the Coa-svn
+mailing list</a><br>
+</body></html>

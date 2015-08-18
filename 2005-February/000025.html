@@ -1,0 +1,122 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Coa-svn] r30 - trunk/src/fr/umlv/coa/javacard
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/coa-svn/2005-February/index.html" >
+   <LINK REL="made" HREF="mailto:coa-svn%40lists.berlios.de?Subject=Re%3A%20%5BCoa-svn%5D%20r30%20-%20trunk/src/fr/umlv/coa/javacard&In-Reply-To=%3C200502251912.j1PJCjXk009341%40sheep.berlios.de%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="000024.html">
+   <LINK REL="Next"  HREF="000026.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Coa-svn] r30 - trunk/src/fr/umlv/coa/javacard</H1>
+    <B>Leny at BerliOS</B> 
+    <A HREF="mailto:coa-svn%40lists.berlios.de?Subject=Re%3A%20%5BCoa-svn%5D%20r30%20-%20trunk/src/fr/umlv/coa/javacard&In-Reply-To=%3C200502251912.j1PJCjXk009341%40sheep.berlios.de%3E"
+       TITLE="[Coa-svn] r30 - trunk/src/fr/umlv/coa/javacard">leny at sheep.berlios.de
+       </A><BR>
+    <I>Fri Feb 25 20:12:45 CET 2005</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="000024.html">[Coa-svn] r29 - trunk/src/fr/umlv/coa/javacard
+</A></li>
+        <LI>Next message: <A HREF="000026.html">[Coa-svn] r31 - trunk/src/fr/umlv/coa/javacard
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#25">[ date ]</a>
+              <a href="thread.html#25">[ thread ]</a>
+              <a href="subject.html#25">[ subject ]</a>
+              <a href="author.html#25">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Author: leny
+Date: 2005-02-25 20:12:42 +0100 (Fri, 25 Feb 2005)
+New Revision: 30
+
+Modified:
+   trunk/src/fr/umlv/coa/javacard/COACardInterface.java
+   trunk/src/fr/umlv/coa/javacard/MonApplet.java
+Log:
+
+
+Modified: trunk/src/fr/umlv/coa/javacard/COACardInterface.java
+===================================================================
+--- trunk/src/fr/umlv/coa/javacard/COACardInterface.java	2005-02-25 18:36:24 UTC (rev 29)
++++ trunk/src/fr/umlv/coa/javacard/COACardInterface.java	2005-02-25 19:12:42 UTC (rev 30)
+@@ -212,9 +212,10 @@
+ 		
+ 		if (arg != null)
+ 		{
+-			lengthArg = (byte)arg.length;
++			lengthArg = (byte)(arg.length+1);
+ 			aidBuffer = new byte [5+lengthArg];
+-			System.arraycopy(arg, 0, aidBuffer, 5, lengthArg);
++			System.arraycopy(arg, 0, aidBuffer, 5, lengthArg-1);
++			aidBuffer[5+lengthArg-1] = 0;
+ 		}
+ 		else
+ 		{
+
+Modified: trunk/src/fr/umlv/coa/javacard/MonApplet.java
+===================================================================
+--- trunk/src/fr/umlv/coa/javacard/MonApplet.java	2005-02-25 18:36:24 UTC (rev 29)
++++ trunk/src/fr/umlv/coa/javacard/MonApplet.java	2005-02-25 19:12:42 UTC (rev 30)
+@@ -41,7 +41,7 @@
+ 	private final static byte [] INS_GET_NUMBER_DESC = {(byte)'g', (byte)'e',(byte)'t',(byte)'N',(byte)'u',(byte)'m',(byte)'b',(byte)'e',(byte)'r'};
+ 	private final static byte [] INS_TYPE = {4, 1, 0, 6};
+ 	private final static byte [] NAME = {(byte)'M', (byte)'o', (byte)'n', (byte)'A', (byte)'p', (byte)'p', (byte)'l', (byte)'e', (byte)'t' };
+-	private byte arg = (byte)0;
++	private byte arg = (byte)12;
+ 	
+ 	//----------------------------------------------------------//
+ 	//------------------- CONSTRUCTORS -------------------------//
+@@ -193,14 +193,16 @@
+ 	private void setArg (APDU apdu)
+ 	{
+ 		byte [] apduBuffer = apdu.getBuffer ();
++
++		apdu.setIncomingAndReceive();
+ 		
+ 		arg = apduBuffer[5];
+ 		
+ 		apdu.setOutgoing ();
+ 		
+-		apdu.setOutgoingLength ((short) 0);
++		apdu.setOutgoingLength ((short) 1);
+ 		
+-		apdu.sendBytes ((short) 5 , (short) 0);
++		apdu.sendBytes ((short) 5 , (short) 1);
+ 	}
+ 	
+ 	/**
+
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="000024.html">[Coa-svn] r29 - trunk/src/fr/umlv/coa/javacard
+</A></li>
+	<LI>Next message: <A HREF="000026.html">[Coa-svn] r31 - trunk/src/fr/umlv/coa/javacard
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#25">[ date ]</a>
+              <a href="thread.html#25">[ thread ]</a>
+              <a href="subject.html#25">[ subject ]</a>
+              <a href="author.html#25">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/coa-svn">More information about the Coa-svn
+mailing list</a><br>
+</body></html>

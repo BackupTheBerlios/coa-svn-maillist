@@ -1,0 +1,145 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Coa-svn] r15 - trunk/src/fr/umlv/coa/javacard
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/coa-svn/2005-February/index.html" >
+   <LINK REL="made" HREF="mailto:coa-svn%40lists.berlios.de?Subject=Re%3A%20%5BCoa-svn%5D%20r15%20-%20trunk/src/fr/umlv/coa/javacard&In-Reply-To=%3C200502211339.j1LDdk7W022851%40sheep.berlios.de%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="000010.html">
+   <LINK REL="Next"  HREF="000012.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Coa-svn] r15 - trunk/src/fr/umlv/coa/javacard</H1>
+    <B>Leny at BerliOS</B> 
+    <A HREF="mailto:coa-svn%40lists.berlios.de?Subject=Re%3A%20%5BCoa-svn%5D%20r15%20-%20trunk/src/fr/umlv/coa/javacard&In-Reply-To=%3C200502211339.j1LDdk7W022851%40sheep.berlios.de%3E"
+       TITLE="[Coa-svn] r15 - trunk/src/fr/umlv/coa/javacard">leny at sheep.berlios.de
+       </A><BR>
+    <I>Mon Feb 21 14:39:46 CET 2005</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="000010.html">[Coa-svn] r14 - trunk/src/fr/umlv/coa/javacard
+</A></li>
+        <LI>Next message: <A HREF="000012.html">[Coa-svn] r16 - trunk/src/fr/umlv/coa/javacard
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#11">[ date ]</a>
+              <a href="thread.html#11">[ thread ]</a>
+              <a href="subject.html#11">[ subject ]</a>
+              <a href="author.html#11">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Author: leny
+Date: 2005-02-21 14:39:42 +0100 (Mon, 21 Feb 2005)
+New Revision: 15
+
+Modified:
+   trunk/src/fr/umlv/coa/javacard/COACardInterface.java
+   trunk/src/fr/umlv/coa/javacard/Main.java
+Log:
+
+
+Modified: trunk/src/fr/umlv/coa/javacard/COACardInterface.java
+===================================================================
+--- trunk/src/fr/umlv/coa/javacard/COACardInterface.java	2005-02-21 12:50:04 UTC (rev 14)
++++ trunk/src/fr/umlv/coa/javacard/COACardInterface.java	2005-02-21 13:39:42 UTC (rev 15)
+@@ -95,7 +95,7 @@
+ 		return listListener.remove (l);
+ 	}
+ 
+-	public void initOCF ()
++	private void initOCF ()
+ 	{
+ 		try
+ 		{
+@@ -190,7 +190,7 @@
+ 		}
+ 	}
+ 
+-	public void stopOCF ()
++	private void stopOCF ()
+ 	{
+ 		try
+ 		{
+@@ -203,7 +203,7 @@
+ 		}
+ 	}
+ 
+-	public void initListApplet ()
++	private void initListApplet ()
+ 	{
+ 		authentication ();
+ 
+@@ -430,14 +430,10 @@
+ 		initOCF ();
+ 
+ 		EventGenerator.getGenerator ().addCTListener (new COAJavaCardListener ());
+-
+-		boolean stop = true;
+-
+-		while (stop)
+-		{
+-
+-		}
+-
++	}
++	
++	public void stop()
++	{
+ 		stopOCF ();
+ 
+ 		System.out.println (&quot;COACardInterface stoped&quot;);
+
+Modified: trunk/src/fr/umlv/coa/javacard/Main.java
+===================================================================
+--- trunk/src/fr/umlv/coa/javacard/Main.java	2005-02-21 12:50:04 UTC (rev 14)
++++ trunk/src/fr/umlv/coa/javacard/Main.java	2005-02-21 13:39:42 UTC (rev 15)
+@@ -20,6 +20,15 @@
+ 	{
+ 		COACardInterface i = COACardInterface.getInstance();
+ 		
+-		i.init();		
++		i.init();	
++		
++		boolean stop = false;
++		
++		while (!stop)
++		{
++			
++		}
++		
++		i.stop();
+ 	}
+ }
+\ No newline at end of file
+
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="000010.html">[Coa-svn] r14 - trunk/src/fr/umlv/coa/javacard
+</A></li>
+	<LI>Next message: <A HREF="000012.html">[Coa-svn] r16 - trunk/src/fr/umlv/coa/javacard
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#11">[ date ]</a>
+              <a href="thread.html#11">[ thread ]</a>
+              <a href="subject.html#11">[ subject ]</a>
+              <a href="author.html#11">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/coa-svn">More information about the Coa-svn
+mailing list</a><br>
+</body></html>

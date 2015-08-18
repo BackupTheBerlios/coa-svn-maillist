@@ -1,0 +1,174 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Coa-svn] r13 - trunk/src/fr/umlv/coa/javacard
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/coa-svn/2005-February/index.html" >
+   <LINK REL="made" HREF="mailto:coa-svn%40lists.berlios.de?Subject=Re%3A%20%5BCoa-svn%5D%20r13%20-%20trunk/src/fr/umlv/coa/javacard&In-Reply-To=%3C200502210046.j1L0k9lK010954%40sheep.berlios.de%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="000008.html">
+   <LINK REL="Next"  HREF="000010.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Coa-svn] r13 - trunk/src/fr/umlv/coa/javacard</H1>
+    <B>Leny at BerliOS</B> 
+    <A HREF="mailto:coa-svn%40lists.berlios.de?Subject=Re%3A%20%5BCoa-svn%5D%20r13%20-%20trunk/src/fr/umlv/coa/javacard&In-Reply-To=%3C200502210046.j1L0k9lK010954%40sheep.berlios.de%3E"
+       TITLE="[Coa-svn] r13 - trunk/src/fr/umlv/coa/javacard">leny at sheep.berlios.de
+       </A><BR>
+    <I>Mon Feb 21 01:46:09 CET 2005</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="000008.html">[Coa-svn] r12 - trunk/src/fr/umlv/coa/javacard
+</A></li>
+        <LI>Next message: <A HREF="000010.html">[Coa-svn] r14 - trunk/src/fr/umlv/coa/javacard
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#9">[ date ]</a>
+              <a href="thread.html#9">[ thread ]</a>
+              <a href="subject.html#9">[ subject ]</a>
+              <a href="author.html#9">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Author: leny
+Date: 2005-02-21 01:45:36 +0100 (Mon, 21 Feb 2005)
+New Revision: 13
+
+Modified:
+   trunk/src/fr/umlv/coa/javacard/AppletCOA.java
+   trunk/src/fr/umlv/coa/javacard/COACardInterface.java
+Log:
+bon une premiere version qui pourrait etre fonctionnelle
+
+Modified: trunk/src/fr/umlv/coa/javacard/AppletCOA.java
+===================================================================
+--- trunk/src/fr/umlv/coa/javacard/AppletCOA.java	2005-02-21 00:26:11 UTC (rev 12)
++++ trunk/src/fr/umlv/coa/javacard/AppletCOA.java	2005-02-21 00:45:36 UTC (rev 13)
+@@ -47,7 +47,12 @@
+ 	 */
+ 	public byte getINS (String name)
+ 	{
+-		return ((Byte) mapINS.get (name)).byteValue ();
++		Byte insByte = (Byte) mapINS.get (name);
++		
++		if(insByte==null)
++			return (byte)0xFF;
++		
++		return insByte.byteValue ();
+ 	}
+ 
+ 	/**
+
+Modified: trunk/src/fr/umlv/coa/javacard/COACardInterface.java
+===================================================================
+--- trunk/src/fr/umlv/coa/javacard/COACardInterface.java	2005-02-21 00:26:11 UTC (rev 12)
++++ trunk/src/fr/umlv/coa/javacard/COACardInterface.java	2005-02-21 00:45:36 UTC (rev 13)
+@@ -14,10 +14,12 @@
+ import opencard.core.terminal.CardTerminalException;
+ import opencard.core.terminal.CardTerminalRegistry;
+ import opencard.core.terminal.ResponseAPDU;
++import opencard.core.util.HexString;
+ import opencard.opt.applet.AppletID;
+ 
+ import com.gemplus.opencard.service.op.CardObjectStatus;
+ import com.gemplus.opencard.service.op.CardServiceOPCore;
++import com.gemplus.opencard.service.op.CardServiceOPException;
+ import com.gemplus.opencard.service.op.Result;
+ import com.gemplus.opencard.service.op.vop.VOPAuthenticationInput;
+ import com.gemplus.opencard.service.op.vop.vop211.CardServiceVOP211;
+@@ -234,7 +236,7 @@
+ 						System.out.println (&quot;\&quot;Introspection\&quot; on &quot; + name);
+ 						AppletCOA ap = new AppletCOA (cOS.getAID (), name);
+ 						makeAppletINSMap (ap);
+-						appletMap.put (cOS.getAID ().toString () , ap);
++						appletMap.put (name , ap);
+ 					}
+ 				}
+ 			}
+@@ -447,4 +449,55 @@
+ 		}
+ 		return new String (c);
+ 	}
++	
++	public byte[] invoke (String appletName, String instructionName)
++	{
++		if((appletMap == null)||(serv == null))
++			return null;
++		
++		AppletCOA applet = (AppletCOA)appletMap.get(appletName);
++		
++		if(applet == null)
++			return null;
++		
++		byte instructionByte = applet.getINS(instructionName);
++		
++		if(instructionByte == (byte)0xFF)
++			return null;
++		
++		byte [] aidBuffer = new byte [5];
++
++		try
++		{
++			System.out.println (&quot;Selecting &quot;+applet.getName());
++			serv.select(applet.getAid());
++		}
++		catch (Exception e1)
++		{
++			e1.printStackTrace();
++		}
++		
++		aidBuffer [0] = applet.getAid().getBytes () [0];
++		aidBuffer [1] = instructionByte;
++		aidBuffer [2] = (byte) 0x00;
++		aidBuffer [3] = (byte) 0x00;
++		aidBuffer [4] = (byte) 0x00;
++
++		ResponseAPDU response = null;
++		
++		try
++		{
++			System.out.println (&quot;Executing &quot;+instructionName);
++			response = serv.sendAPDU (aidBuffer);
++		}
++		catch (CardTerminalException e)
++		{
++			e.printStackTrace();
++		}
++
++		if(response != null)
++			return response.getBuffer();
++		
++		return null;
++	}
+ }
+\ No newline at end of file
+
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="000008.html">[Coa-svn] r12 - trunk/src/fr/umlv/coa/javacard
+</A></li>
+	<LI>Next message: <A HREF="000010.html">[Coa-svn] r14 - trunk/src/fr/umlv/coa/javacard
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#9">[ date ]</a>
+              <a href="thread.html#9">[ thread ]</a>
+              <a href="subject.html#9">[ subject ]</a>
+              <a href="author.html#9">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/coa-svn">More information about the Coa-svn
+mailing list</a><br>
+</body></html>

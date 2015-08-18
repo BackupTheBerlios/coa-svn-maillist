@@ -1,0 +1,714 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Coa-svn] r24 - trunk/src/fr/umlv/coa/corba
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/coa-svn/2005-February/index.html" >
+   <LINK REL="made" HREF="mailto:coa-svn%40lists.berlios.de?Subject=Re%3A%20%5BCoa-svn%5D%20r24%20-%20trunk/src/fr/umlv/coa/corba&In-Reply-To=%3C200502241638.j1OGcc3l005711%40sheep.berlios.de%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="000018.html">
+   <LINK REL="Next"  HREF="000020.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Coa-svn] r24 - trunk/src/fr/umlv/coa/corba</H1>
+    <B>Ludovic at BerliOS</B> 
+    <A HREF="mailto:coa-svn%40lists.berlios.de?Subject=Re%3A%20%5BCoa-svn%5D%20r24%20-%20trunk/src/fr/umlv/coa/corba&In-Reply-To=%3C200502241638.j1OGcc3l005711%40sheep.berlios.de%3E"
+       TITLE="[Coa-svn] r24 - trunk/src/fr/umlv/coa/corba">ludo93500 at sheep.berlios.de
+       </A><BR>
+    <I>Thu Feb 24 17:38:38 CET 2005</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="000018.html">[Coa-svn] r23 - in trunk/src/fr/umlv/coa: corba javacard
+</A></li>
+        <LI>Next message: <A HREF="000020.html">[Coa-svn] r25 - trunk/src/fr/umlv/coa/corba
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#19">[ date ]</a>
+              <a href="thread.html#19">[ thread ]</a>
+              <a href="subject.html#19">[ subject ]</a>
+              <a href="author.html#19">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Author: ludo93500
+Date: 2005-02-24 17:38:37 +0100 (Thu, 24 Feb 2005)
+New Revision: 24
+
+Added:
+   trunk/src/fr/umlv/coa/corba/CardChecker.java
+Removed:
+   trunk/src/fr/umlv/coa/corba/CardCheckThread.java
+Modified:
+   trunk/src/fr/umlv/coa/corba/COA.java
+Log:
+Ajout de l'enregistrement ds un naming context
+
+Modified: trunk/src/fr/umlv/coa/corba/COA.java
+===================================================================
+--- trunk/src/fr/umlv/coa/corba/COA.java	2005-02-24 16:14:04 UTC (rev 23)
++++ trunk/src/fr/umlv/coa/corba/COA.java	2005-02-24 16:38:37 UTC (rev 24)
+@@ -12,6 +12,8 @@
+ 
+ import org.omg.CORBA.ORB;
+ import org.omg.CORBA.Policy;
++import org.omg.CosNaming.NamingContextExt;
++import org.omg.CosNaming.NamingContextExtHelper;
+ import org.omg.PortableServer.IdAssignmentPolicyValue;
+ import org.omg.PortableServer.POA;
+ import org.omg.PortableServer.POAHelper;
+@@ -33,14 +35,24 @@
+ 	{
+ 		ORB orb  = ORB.init (args, null);
+ 		POA root = POAHelper.narrow (orb.resolve_initial_references (&quot;RootPOA&quot;));
++		NamingContextExt naming = null;
+ 		
++		try
++		{
++			naming = NamingContextExtHelper.narrow (orb.resolve_initial_references (&quot;NameService&quot;));
++		}
++		catch (Exception e)
++		{
++			naming = null;
++		}
++		
+ 		Policy[] policies = {root.create_id_assignment_policy (IdAssignmentPolicyValue.USER_ID)};
+ 		
+ 		POA child= root.create_POA (&quot;COA&quot;, root.the_POAManager (), policies);
+ 
+ 		root.the_POAManager ().activate ();
+ 
+-		new CardCheckThread (orb, child);
++		new CardChecker (orb, child, naming);
+ 		
+ 		orb.run ();
+ 	}
+
+Deleted: trunk/src/fr/umlv/coa/corba/CardCheckThread.java
+===================================================================
+--- trunk/src/fr/umlv/coa/corba/CardCheckThread.java	2005-02-24 16:14:04 UTC (rev 23)
++++ trunk/src/fr/umlv/coa/corba/CardCheckThread.java	2005-02-24 16:38:37 UTC (rev 24)
+@@ -1,257 +0,0 @@
+-/* 
+- * File    : COA.java
+- * Created : 14 f&#233;vr. 2005
+- * 
+- * =======================================
+- * COA PROJECT (&quot;<A HREF="http://coa.berlios.de">http://coa.berlios.de</A>&quot;)
+- * =======================================
+- *
+- */
+-
+-package fr.umlv.coa.corba;
+-
+-import java.io.BufferedWriter;
+-import java.io.File;
+-import java.io.FileWriter;
+-import java.io.IOException;
+-import java.util.ArrayList;
+-import java.util.HashMap;
+-import java.util.Iterator;
+-import java.util.List;
+-import java.util.Map;
+-
+-import opencard.core.event.CTListener;
+-import opencard.core.event.CardTerminalEvent;
+-import opencard.core.terminal.CardTerminalException;
+-
+-import org.omg.CORBA.ORB;
+-import org.omg.PortableServer.POA;
+-import org.omg.PortableServer.Servant;
+-
+-import fr.umlv.coa.javacard.AppletCOA;
+-import fr.umlv.coa.javacard.COACardInterface;
+-
+-
+-/**
+- * @author Ludo
+- *
+- */
+-public final class CardCheckThread
+-{
+-	private static int COMPTEUR = 0;
+-	
+-	/** The ORB */
+-	private final ORB   orb;
+-	/** The POA */
+-	private final POA   poa;
+-	
+-	/** Map associating for a slot ID &lt;-&gt; a list of applets */
+-	private final Map		 slots		  = new HashMap ();
+-	
+-	/** The card listener */
+-	private final CTListener cardListener = new CardListener ();
+-	
+-	/**
+-	 * Constructor
+-	 * 
+-	 * @param orb the initial orb 
+-	 * @param poa the poa
+-	 */
+-	public CardCheckThread (ORB orb, POA poa)
+-	{
+-		this.orb = orb;
+-		this.poa = poa;
+-		
+-		System.out.println (&quot;[COA Started]&quot;);
+-		
+-		// Register to the card listener and initialize it (by the singleton)
+-		COACardInterface.getInstance ().addCardInsertionListener (cardListener);
+-	}
+-
+-	//----------------------------------------------------------//
+-	//------------------ PRIVATE METHODS -----------------------//
+-	//----------------------------------------------------------//
+-
+-	/**
+-	 * To export the IOR
+-	 * 
+-	 * @param szName 	  the applet name
+-	 * @param iCardNumber the card number 
+-	 * @param szIOR 	  the IOR to export
+-	 * 
+-	 * @throws IOException 
+-	 */
+-	private void exportIOR (String szName, int iCardNumber, String szIOR) throws IOException
+-	{
+-		String szFileNale = szName + iCardNumber + COAParameters.COA_IOR_FILE_SUFFIX;
+-		BufferedWriter bw = null;
+-		
+-		try
+-		{
+-			bw = new BufferedWriter (new FileWriter (szFileNale));
+-			bw.write (szIOR);
+-		}
+-		finally
+-		{
+-			if (bw != null)
+-				bw.close ();
+-		}
+-	}
+-	
+-	
+-	/**
+-	 * To unexport an IOR reference
+-	 * 
+-	 * @param szName 	  the applet name
+-	 * @param iCardNumber the card number 
+-	 * 
+-	 * @throws IOException 
+-	 */
+-	private void unexportIOR (String szName, int iCardNumber) throws IOException
+-	{
+-		String szFileName = szName + iCardNumber + COAParameters.COA_IOR_FILE_SUFFIX;
+-		
+-		File f = new File (szFileName);
+-		f.delete ();
+-	}	
+-	
+-	
+-	/**
+-	 * To generate the servant ID
+-	 * 
+-	 * @param szName 		the applet name
+-	 * @param iCardNumber	the card number
+-	 * @return the generated id
+-	 */
+-	private byte [] generate_card_id (String szName, int iCardNumber)
+-	{
+-		StringBuilder szID = new StringBuilder (COAParameters.COA_MODULE_NAME);
+-		szID.append (COAParameters.COA_ID_DELIMITER);
+-		szID.append (szName);
+-		szID.append (COAParameters.COA_ID_DELIMITER);
+-		szID.append (iCardNumber);
+-		
+-		return szID.toString ().getBytes ();
+-	}
+-	
+-	
+-	/**
+-	 * The card listener
+-	 * 
+-	 * @author Ludo
+-	 *
+-	 */
+-	private final class CardListener implements CTListener
+-	{
+-		/**
+-		 * @see opencard.core.event.CTListener#cardInserted(opencard.core.event.CardTerminalEvent)
+-		 */
+-		public void cardInserted (CardTerminalEvent event) throws CardTerminalException
+-		{
+-			System.out.println (&quot;CARD INSERTION -&gt; SERVANT ACTIVATION&quot;);
+-			
+-			// The slot ID used for the slots map
+-			Integer slotID = new Integer (event.getSlotID ());
+-			
+-			// Get the applets list for this slot
+-			List list = (List) slots.get (slotID);
+-			
+-			if (list == null)
+-				list = new ArrayList ();
+-			
+-			Map applets = COACardInterface.getInstance ().getAppletMap ();
+-			
+-			for (Iterator it = applets.keySet ().iterator (); it.hasNext ();)
+-			{
+-				String  	szName  = (String) it.next ();
+-				AppletCOA	applet  = (AppletCOA) applets.get (szName);
+-				
+-				Servant servant = new CardServant (applet);
+-				
+-				try
+-				{
+-					byte [] oid	= generate_card_id (szName, slotID.intValue ());
+-					
+-					System.out.println (&quot;OID DU SERVANT INSERE : &quot; + new String (oid));
+-					
+-					poa.activate_object_with_id (oid, servant);
+-					
+-					exportIOR (szName, slotID.intValue (), orb.object_to_string (poa.id_to_reference (oid)));
+-					
+-					list.add (new ServantNameOID (oid, szName));
+-				}
+-				catch (Exception e)
+-				{
+-					e.printStackTrace ();
+-				}
+-			}
+-			
+-			slots.put (slotID, list);
+-		}
+-
+-		
+-		/**
+-		 * @see opencard.core.event.CTListener#cardRemoved(opencard.core.event.CardTerminalEvent)
+-		 */
+-		public void cardRemoved (CardTerminalEvent event) throws CardTerminalException
+-		{
+-			System.out.println (&quot;CARD INSERTION -&gt; SERVANT DESACTIVATION&quot;);
+-			
+-			// The slot ID used for the slots map
+-			Integer slotID = new Integer (event.getSlotID ());
+-			
+-			// Get the applets list for this slot
+-			List list   = (List) slots.get (slotID);
+-			
+-			if (list == null)
+-				return;
+-			
+-			for (Iterator it = list.iterator (); it.hasNext ();)
+-			{
+-				try
+-				{
+-					ServantNameOID s = (ServantNameOID) it.next (); 
+-					
+-					poa.deactivate_object (s.oid);
+-					
+-					unexportIOR (s.szName, slotID.intValue ());
+-				}
+-				catch (Exception e)
+-				{
+-					e.printStackTrace ();
+-				}
+-			}
+-			
+-			slots.remove (slotID);
+-		}
+-	}
+-	
+-	
+-	
+-	/**
+-	 * Class containing the oid and the name of a servant 
+-	 * 
+-	 * @author Ludo
+-	 *
+-	 */
+-	private static final class ServantNameOID
+-	{
+-		/** The servant id */
+-		final byte [] oid;
+-		/** The servant name */
+-		final String  szName;
+-		
+-		/**
+-		 * Constructor
+-		 * 
+-		 * @param oid 
+-		 * @param szName 
+-		 */
+-		public ServantNameOID (byte [] oid, String szName)
+-		{
+-			this.oid 	= oid;
+-			this.szName	= szName;
+-		}
+-	}
+-	
+-}
+
+Added: trunk/src/fr/umlv/coa/corba/CardChecker.java
+===================================================================
+--- trunk/src/fr/umlv/coa/corba/CardChecker.java	2005-02-24 16:14:04 UTC (rev 23)
++++ trunk/src/fr/umlv/coa/corba/CardChecker.java	2005-02-24 16:38:37 UTC (rev 24)
+@@ -0,0 +1,331 @@
++/* 
++ * File    : COA.java
++ * Created : 14 f&#233;vr. 2005
++ * 
++ * =======================================
++ * COA PROJECT (&quot;<A HREF="http://coa.berlios.de">http://coa.berlios.de</A>&quot;)
++ * =======================================
++ *
++ */
++
++package fr.umlv.coa.corba;
++
++import java.io.BufferedWriter;
++import java.io.File;
++import java.io.FileWriter;
++import java.io.IOException;
++import java.util.ArrayList;
++import java.util.HashMap;
++import java.util.Iterator;
++import java.util.List;
++import java.util.Map;
++
++import opencard.core.event.CTListener;
++import opencard.core.event.CardTerminalEvent;
++import opencard.core.terminal.CardTerminalException;
++
++import org.omg.CORBA.ORB;
++import org.omg.CORBA.Object;
++import org.omg.CosNaming.NameComponent;
++import org.omg.CosNaming.NamingContextExt;
++import org.omg.PortableServer.POA;
++import org.omg.PortableServer.Servant;
++
++import fr.umlv.coa.javacard.AppletCOA;
++import fr.umlv.coa.javacard.COACardInterface;
++
++
++/**
++ * @author Ludo
++ *
++ */
++public final class CardChecker
++{
++	private static int COMPTEUR = 0;
++	
++	/** The ORB */
++	private final ORB   orb;
++	/** The POA */
++	private final POA   poa;
++	
++	/** The naming context */
++	private final NamingContextExt naming;
++	
++	/** Map associating for a slot ID &lt;-&gt; a list of applets */
++	private final Map		 slots		  = new HashMap ();
++	
++	/** The card listener */
++	private final CTListener cardListener = new CardListener ();
++	
++	/**
++	 * Constructor
++	 * 
++	 * @param orb 	 the initial orb 
++	 * @param poa 	 the poa
++	 * @param naming the naming context
++	 */
++	public CardChecker (ORB orb, POA poa, NamingContextExt naming)
++	{
++		this.orb = orb;
++		this.poa = poa;
++		
++		this.naming = naming;
++		
++		System.out.println (&quot;[COA Started]&quot;);
++		
++		// Register to the card listener and initialize it (by the singleton)
++		COACardInterface.getInstance ().addCardInsertionListener (cardListener);
++	}
++
++	//----------------------------------------------------------//
++	//------------------ PRIVATE METHODS -----------------------//
++	//----------------------------------------------------------//
++
++	/**
++	 * To export the IOR
++	 * 
++	 * @param szName 	  the applet name
++	 * @param iCardNumber the card number 
++	 * @param object 	  the object to export
++	 * 
++	 * @throws Exception 
++	 */
++	private void exportObject (String szName, int iCardNumber, Object object) throws Exception
++	{
++		exportObjectToFile (szName, iCardNumber, object);
++		
++		if (naming != null)
++			exportObjectToNamingService (szName, iCardNumber, object);
++	}
++	
++	/**
++	 * To export the IOR
++	 * 
++	 * @param szName 	  the applet name
++	 * @param iCardNumber the card number 
++	 * @param object 	  the object to export
++	 * 
++	 * @throws Exception 
++	 */
++	private void exportObjectToFile (String szName, int iCardNumber, Object object) throws Exception
++	{
++		String szFileName = szName + iCardNumber + COAParameters.COA_IOR_FILE_SUFFIX;
++		BufferedWriter bw = null;
++		
++		try
++		{
++			bw = new BufferedWriter (new FileWriter (szFileName));
++			bw.write (orb.object_to_string (object));
++		}
++		finally
++		{
++			if (bw != null)
++				bw.close ();
++		}
++	}
++	
++	
++	/**
++	 * To export the IOR
++	 * 
++	 * @param szName 	  the applet name
++	 * @param iCardNumber the card number 
++	 * @param object 	  the object to export
++	 * 
++	 * @throws Exception 
++	 */
++	private void exportObjectToNamingService (String szName, int iCardNumber, Object object) throws Exception
++	{
++		String szRegistrationName = szName + iCardNumber;
++		
++		NameComponent [] name = naming.to_name (szRegistrationName);
++		naming.rebind (name, object);
++	}	
++	
++	/**
++	 * To unexport a registered objet
++	 * 
++	 * @param szName 	  the applet name
++	 * @param iCardNumber the card number 
++	 * 
++	 * @throws Exception 
++	 */
++	private void unexportObject (String szName, int iCardNumber) throws Exception
++	{
++		unexportOnFile (szName, iCardNumber);
++		
++		if (naming != null)
++			unexportOnNamingContext (szName, iCardNumber);
++	}
++	
++	
++	/**
++	 * To unexport an IOR reference
++	 * 
++	 * @param szName 	  the applet name
++	 * @param iCardNumber the card number 
++	 * 
++	 * @throws IOException 
++	 */
++	private void unexportOnFile (String szName, int iCardNumber) throws IOException
++	{
++		String szFileName = szName + iCardNumber + COAParameters.COA_IOR_FILE_SUFFIX;
++		
++		File f = new File (szFileName);
++		f.delete ();
++	}	
++	
++	/**
++	 * To unexport an IOR reference
++	 * 
++	 * @param szName 	  the applet name
++	 * @param iCardNumber the card number 
++	 * 
++	 * @throws Exception 
++	 */
++	private void unexportOnNamingContext (String szName, int iCardNumber) throws Exception
++	{
++		String szRegistrationName = szName + iCardNumber;
++		
++		naming.unbind (naming.to_name (szRegistrationName));
++	}	
++	
++	/**
++	 * To generate the servant ID
++	 * 
++	 * @param szName 		the applet name
++	 * @param iCardNumber	the card number
++	 * @return the generated id
++	 */
++	private byte [] generate_card_id (String szName, int iCardNumber)
++	{
++		StringBuilder szID = new StringBuilder (COAParameters.COA_MODULE_NAME);
++		szID.append (COAParameters.COA_ID_DELIMITER);
++		szID.append (szName);
++		szID.append (COAParameters.COA_ID_DELIMITER);
++		szID.append (iCardNumber);
++		
++		return szID.toString ().getBytes ();
++	}
++	
++	
++	/**
++	 * The card listener
++	 * 
++	 * @author Ludo
++	 *
++	 */
++	private final class CardListener implements CTListener
++	{
++		/**
++		 * @see opencard.core.event.CTListener#cardInserted(opencard.core.event.CardTerminalEvent)
++		 */
++		public void cardInserted (CardTerminalEvent event) throws CardTerminalException
++		{
++			System.out.println (&quot;CARD INSERTION -&gt; SERVANT ACTIVATION&quot;);
++			
++			// The slot ID used for the slots map
++			Integer slotID = new Integer (event.getSlotID ());
++			
++			// Get the applets list for this slot
++			List list = (List) slots.get (slotID);
++			
++			if (list == null)
++				list = new ArrayList ();
++			
++			Map applets = COACardInterface.getInstance ().getAppletMap ();
++			
++			for (Iterator it = applets.keySet ().iterator (); it.hasNext ();)
++			{
++				String  	szName  = (String) it.next ();
++				AppletCOA	applet  = (AppletCOA) applets.get (szName);
++				
++				Servant servant = new CardServant (applet);
++				
++				try
++				{
++					byte [] oid	= generate_card_id (szName, slotID.intValue ());
++					
++					System.out.println (&quot;OID DU SERVANT INSERE : &quot; + new String (oid));
++					
++					poa.activate_object_with_id (oid, servant);
++					
++					exportObject (szName, slotID.intValue (), poa.id_to_reference (oid));
++					
++					list.add (new ServantNameOID (oid, szName));
++				}
++				catch (Exception e)
++				{
++					e.printStackTrace ();
++				}
++			}
++			
++			slots.put (slotID, list);
++		}
++
++		
++		/**
++		 * @see opencard.core.event.CTListener#cardRemoved(opencard.core.event.CardTerminalEvent)
++		 */
++		public void cardRemoved (CardTerminalEvent event) throws CardTerminalException
++		{
++			System.out.println (&quot;CARD INSERTION -&gt; SERVANT DESACTIVATION&quot;);
++			
++			// The slot ID used for the slots map
++			Integer slotID = new Integer (event.getSlotID ());
++			
++			// Get the applets list for this slot
++			List list   = (List) slots.get (slotID);
++			
++			if (list == null)
++				return;
++			
++			for (Iterator it = list.iterator (); it.hasNext ();)
++			{
++				try
++				{
++					ServantNameOID s = (ServantNameOID) it.next (); 
++					
++					poa.deactivate_object (s.oid);
++					
++					unexportObject (s.szName, slotID.intValue ());
++				}
++				catch (Exception e)
++				{
++					e.printStackTrace ();
++				}
++			}
++			
++			slots.remove (slotID);
++		}
++	}
++	
++	
++	
++	/**
++	 * Class containing the oid and the name of a servant 
++	 * 
++	 * @author Ludo
++	 *
++	 */
++	private static final class ServantNameOID
++	{
++		/** The servant id */
++		final byte [] oid;
++		/** The servant name */
++		final String  szName;
++		
++		/**
++		 * Constructor
++		 * 
++		 * @param oid 
++		 * @param szName 
++		 */
++		public ServantNameOID (byte [] oid, String szName)
++		{
++			this.oid 	= oid;
++			this.szName	= szName;
++		}
++	}
++	
++}
+
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="000018.html">[Coa-svn] r23 - in trunk/src/fr/umlv/coa: corba javacard
+</A></li>
+	<LI>Next message: <A HREF="000020.html">[Coa-svn] r25 - trunk/src/fr/umlv/coa/corba
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#19">[ date ]</a>
+              <a href="thread.html#19">[ thread ]</a>
+              <a href="subject.html#19">[ subject ]</a>
+              <a href="author.html#19">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/coa-svn">More information about the Coa-svn
+mailing list</a><br>
+</body></html>

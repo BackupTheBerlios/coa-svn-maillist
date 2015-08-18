@@ -1,0 +1,360 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Coa-svn] r29 - trunk/src/fr/umlv/coa/javacard
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/coa-svn/2005-February/index.html" >
+   <LINK REL="made" HREF="mailto:coa-svn%40lists.berlios.de?Subject=Re%3A%20%5BCoa-svn%5D%20r29%20-%20trunk/src/fr/umlv/coa/javacard&In-Reply-To=%3C200502251836.j1PIaPDn007629%40sheep.berlios.de%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="000023.html">
+   <LINK REL="Next"  HREF="000025.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Coa-svn] r29 - trunk/src/fr/umlv/coa/javacard</H1>
+    <B>Leny at BerliOS</B> 
+    <A HREF="mailto:coa-svn%40lists.berlios.de?Subject=Re%3A%20%5BCoa-svn%5D%20r29%20-%20trunk/src/fr/umlv/coa/javacard&In-Reply-To=%3C200502251836.j1PIaPDn007629%40sheep.berlios.de%3E"
+       TITLE="[Coa-svn] r29 - trunk/src/fr/umlv/coa/javacard">leny at sheep.berlios.de
+       </A><BR>
+    <I>Fri Feb 25 19:36:25 CET 2005</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="000023.html">[Coa-svn] r28 - in trunk/src/fr/umlv/coa: corba javacard
+</A></li>
+        <LI>Next message: <A HREF="000025.html">[Coa-svn] r30 - trunk/src/fr/umlv/coa/javacard
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#24">[ date ]</a>
+              <a href="thread.html#24">[ thread ]</a>
+              <a href="subject.html#24">[ subject ]</a>
+              <a href="author.html#24">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Author: leny
+Date: 2005-02-25 19:36:24 +0100 (Fri, 25 Feb 2005)
+New Revision: 29
+
+Added:
+   trunk/src/fr/umlv/coa/javacard/AppletInstruction.java
+Modified:
+   trunk/src/fr/umlv/coa/javacard/AppletCOA.java
+   trunk/src/fr/umlv/coa/javacard/COACardInterface.java
+   trunk/src/fr/umlv/coa/javacard/MonApplet.java
+Log:
+
+
+Modified: trunk/src/fr/umlv/coa/javacard/AppletCOA.java
+===================================================================
+--- trunk/src/fr/umlv/coa/javacard/AppletCOA.java	2005-02-25 17:51:23 UTC (rev 28)
++++ trunk/src/fr/umlv/coa/javacard/AppletCOA.java	2005-02-25 18:36:24 UTC (rev 29)
+@@ -1,6 +1,7 @@
+ package fr.umlv.coa.javacard;
+ 
+ import java.util.HashMap;
++import java.util.Iterator;
+ import java.util.Map;
+ 
+ import opencard.opt.applet.AppletID;
+@@ -50,21 +51,30 @@
+ 	 */
+ 	public byte getINS (String name)
+ 	{
+-		Byte insByte = (Byte) mapINS.get (name);
++		byte insByte = -1;
+ 		
+-		if(insByte==null)
++		for(Iterator i = mapINS.keySet().iterator(); i.hasNext();)
++		{
++			AppletInstruction ins = (AppletInstruction)i.next();
++			if(ins.getName().equals(name))
++			{
++				insByte = ins.getReturnType();
++			}
++		}
++		
++		if(insByte==-1)
+ 			return (byte)0xFF;
+ 		
+-		return insByte.byteValue ();
++		return insByte;
+ 	}
+ 
+ 	/**
+ 	 * @param number
+ 	 * @param name
+ 	 */
+-	public void addINS (byte number, String name)
++	public void addINS (byte number, AppletInstruction ins)
+ 	{
+-		mapINS.put (name , new Byte (number));
++		mapINS.put (ins , new Byte (number));
+ 	}
+ 		
+ 	/**
+
+Added: trunk/src/fr/umlv/coa/javacard/AppletInstruction.java
+===================================================================
+--- trunk/src/fr/umlv/coa/javacard/AppletInstruction.java	2005-02-25 17:51:23 UTC (rev 28)
++++ trunk/src/fr/umlv/coa/javacard/AppletInstruction.java	2005-02-25 18:36:24 UTC (rev 29)
+@@ -0,0 +1,49 @@
++/* 
++ * File    : AppletInstruction.java
++ * Created : 25 f&#233;vr. 2005
++ * 
++ * =======================================
++ * COA PROJECT (&quot;<A HREF="http://coa.berlios.de">http://coa.berlios.de</A>&quot;)
++ * =======================================
++ *
++ */
++
++package fr.umlv.coa.javacard;
++
++/**
++ * @author Administrateur
++ *
++ */
++public class AppletInstruction
++{
++	private String	name;
++	private byte	returnType;
++	
++	
++	
++	/**
++	 * @param name
++	 * @param returnType
++	 */
++	public AppletInstruction (String name, byte returnType)
++	{
++		this.name = name;
++		this.returnType = returnType;
++	}
++	
++	
++	/**
++	 * @return Returns the name.
++	 */
++	public String getName ()
++	{
++		return name;
++	}
++	/**
++	 * @return Returns the returnType.
++	 */
++	public byte getReturnType ()
++	{
++		return returnType;
++	}
++}
+
+Modified: trunk/src/fr/umlv/coa/javacard/COACardInterface.java
+===================================================================
+--- trunk/src/fr/umlv/coa/javacard/COACardInterface.java	2005-02-25 17:51:23 UTC (rev 28)
++++ trunk/src/fr/umlv/coa/javacard/COACardInterface.java	2005-02-25 18:36:24 UTC (rev 29)
+@@ -47,7 +47,7 @@
+ public final class COACardInterface
+ {
+ 	/** The opencard home directory */ 
+-	private static final String	HOME_DIR 	= &quot;c:&quot; + File.separator + &quot;gemplus&quot; + File.separator + &quot;gemxpresso.rad3&quot;;
++	private static final String	HOME_DIR 	= &quot;c:\\gemplus\\gemxpresso.rad3&quot;;
+ 	/** The card reader */
+ 	private static final String	CARD_TARGET	= &quot;gempc410_com1&quot;;
+ 	/** The card profile name */
+@@ -61,7 +61,10 @@
+ 	private final static byte		CARD_GET_INS		= (byte) 0xFE;
+ 	/** The card get instruction name */
+ 	private final static byte		CARD_GET_INS_NAME	= (byte) 0xFD;
++	/** The card get instruction return type */
++	private final static byte		CARD_GET_INS_TYPE	= (byte) 0xFC;
+ 	
++	
+ 	/** The Singleton instance */
+ 	private static COACardInterface	INSTANCE = null;
+ 
+@@ -107,7 +110,16 @@
+ 	/** The application key index */
+ 	private int						appKeyIndex			= 0;
+ 
++	/** Applet return Values */
++	private static final byte		BYTE_APPLET			= 0;
++	private static final byte		SHORT_APPLET		= 1;
++	private static final byte		INT_APPLET			= 2;
++	private static final byte		LONG_APPLET			= 3;
++	private static final byte		STRING_APPLET		= 4;
++	private static final byte		ARRAY_APPLET		= 5;
++	private static final byte		VOID_APPLET			= 6;
+ 	
++	
+ 	//----------------------------------------------------------//
+ 	//--------------------- CONSTRUCTORS -----------------------//
+ 	//----------------------------------------------------------//
+@@ -474,6 +486,7 @@
+ 	private void buildAppletINSMap (AppletCOA applet)
+ 	{
+ 		byte [] desc = getAppletDescription (applet.getAid ());
++		byte [] type = getAppletReturnType(applet.getAid());
+ 		int i = 2;
+ 
+ 		if ((desc.length &lt; 2) || (desc [0] != 0x12) || (desc [1] != 0x03))
+@@ -485,9 +498,36 @@
+ 			
+ 			String instructionName = getInstructionName(applet.getAid(), instructionByte);
+ 			
+-			System.out.println (&quot;\t Found &quot;+instructionName + &quot; - &quot;+instructionByte);
++			String tmpType = &quot;&quot;;
++			
++			switch(type[i])
++			{
++				case BYTE_APPLET:
++					tmpType = &quot;byte&quot;;
++					break;
++				case SHORT_APPLET:
++					tmpType = &quot;short&quot;;
++					break;
++				case INT_APPLET:
++					tmpType = &quot;int&quot;;
++					break;
++				case LONG_APPLET:
++					tmpType = &quot;long&quot;;
++					break;
++				case STRING_APPLET:
++					tmpType = &quot;String&quot;;
++					break;
++				case ARRAY_APPLET:
++					tmpType = &quot;byte []&quot;;
++					break;
++				case VOID_APPLET:
++					tmpType = &quot;void&quot;;
++					break;
++			}
++			
++			System.out.println (&quot;\t Found : &quot;+tmpType+&quot; &quot;+instructionName + &quot; - &quot;+instructionByte);
+ 
+-			applet.addINS (instructionByte , instructionName);
++			applet.addINS (instructionByte , new AppletInstruction(instructionName, type[i]));
+ 			
+ 			i++;
+ 		}
+@@ -527,6 +567,39 @@
+ 	}
+ 
+ 	/**
++	 * To get an applet instructions return type
++	 * 
++	 * @param aid the applet ID
++	 * @return the applet description byte array
++	 */
++	private byte [] getAppletReturnType (AppletID aid)
++	{
++		try
++		{
++			byte [] aidBuffer = new byte [5];
++
++			serv.select (aid);
++
++			aidBuffer [0] = aid.getBytes () [0];
++			aidBuffer [1] = CARD_GET_INS_TYPE;
++			aidBuffer [2] = (byte) 0x00;
++			aidBuffer [3] = (byte) 0x00;
++			aidBuffer [4] = (byte) 0x00;
++
++			ResponseAPDU response = serv.sendAPDU (aidBuffer);
++
++			return response.getBuffer ();
++
++		}
++		catch (Exception e)
++		{
++			e.printStackTrace ();
++		}
++
++		return null;
++	}
++	
++	/**
+ 	 * To get the applet name
+ 	 * 
+ 	 * @param aid the applet ID
+
+Modified: trunk/src/fr/umlv/coa/javacard/MonApplet.java
+===================================================================
+--- trunk/src/fr/umlv/coa/javacard/MonApplet.java	2005-02-25 17:51:23 UTC (rev 28)
++++ trunk/src/fr/umlv/coa/javacard/MonApplet.java	2005-02-25 18:36:24 UTC (rev 29)
+@@ -30,6 +30,7 @@
+ 	private final static byte INS_GET_ARG = (byte) 0x15;
+ 	private final static byte INS_SET_ARG = (byte) 0x16;
+ 	private final static byte INS_DESC = (byte) 0xFD;
++	private final static byte INS_RETRUN_TYPE = (byte) 0xFC;
+ 	private final static byte INS_LIST_INS = (byte) 0xFE;
+ 	private final static byte [] DESC_OK = {(byte)0x12, (byte)0x03};
+ 	private final static byte [] DESC_NOK = {(byte)0x12, (byte)0x04};
+@@ -38,6 +39,7 @@
+ 	private final static byte [] INS_GET_ARG_DESC = {(byte)'g', (byte)'e',(byte)'t',(byte)'A',(byte)'r',(byte)'g'};
+ 	private final static byte [] INS_SET_ARG_DESC = {(byte)'s', (byte)'e',(byte)'t',(byte)'A',(byte)'r',(byte)'g'};
+ 	private final static byte [] INS_GET_NUMBER_DESC = {(byte)'g', (byte)'e',(byte)'t',(byte)'N',(byte)'u',(byte)'m',(byte)'b',(byte)'e',(byte)'r'};
++	private final static byte [] INS_TYPE = {4, 1, 0, 6};
+ 	private final static byte [] NAME = {(byte)'M', (byte)'o', (byte)'n', (byte)'A', (byte)'p', (byte)'p', (byte)'l', (byte)'e', (byte)'t' };
+ 	private byte arg = (byte)0;
+ 	
+@@ -105,7 +107,9 @@
+ 				case INS_SET_ARG :
+ 					setArg (arg0);
+ 					break;
+-					
++				case INS_RETRUN_TYPE :
++					sendReturnType (arg0);
++					break;					
+ 				default :
+ 					ISOException.throwIt (ISO7816.SW_INS_NOT_SUPPORTED);
+ 			}
+@@ -259,6 +263,20 @@
+ 		apdu.sendBytes ((short) 0 , (short) (2 + LIST_INS.length));
+ 	}
+ 	
++	private void sendReturnType (APDU apdu)
++	{
++		byte [] buffer = apdu.getBuffer ();
++		
++		Util.arrayCopy (DESC_OK , (short) 0 , buffer , (short) 0 , (short) 2);
++		Util.arrayCopy (INS_TYPE , (short) 0 , buffer , (short) 2 ,
++				(short) INS_TYPE.length);
++		
++		apdu.setOutgoing ();
++		apdu.setOutgoingLength ((short) (2 + INS_TYPE.length));
++		
++		apdu.sendBytes ((short) 0 , (short) (2 + INS_TYPE.length));
++	}
++	
+ 	/**
+ 	 * @param apdu
+ 	 * @param desc
+
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="000023.html">[Coa-svn] r28 - in trunk/src/fr/umlv/coa: corba javacard
+</A></li>
+	<LI>Next message: <A HREF="000025.html">[Coa-svn] r30 - trunk/src/fr/umlv/coa/javacard
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#24">[ date ]</a>
+              <a href="thread.html#24">[ thread ]</a>
+              <a href="subject.html#24">[ subject ]</a>
+              <a href="author.html#24">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/coa-svn">More information about the Coa-svn
+mailing list</a><br>
+</body></html>
